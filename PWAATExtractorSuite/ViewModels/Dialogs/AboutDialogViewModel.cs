@@ -33,7 +33,7 @@ public class AboutDialogViewModel : ViewModelBase, IActivatableViewModel
     private void Bind(CompositeDisposable disposables)
     {
         VersionInfo.Value = $"{Application.Current?.Resources["AppVersion"] as string}";
-        Copyright.Value = $"© {DateTime.Now.Year} Translate Kordai";
+        Copyright.Value = $"Brought to you by:\nMaFIa_TH from Translate Kordai";
         OpenWebsiteCommand
             .SubscribeAwait(async (url, _) => await OpenWebsite(url), AwaitOperation.Drop)
             .AddTo(disposables);

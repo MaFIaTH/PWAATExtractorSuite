@@ -1,0 +1,42 @@
+<rxui:ReactiveUserControl xmlns="https://github.com/avaloniaui"
+                          xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                          xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                          xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                          xmlns:rxui="http://reactiveui.net"
+                          xmlns:vm="clr-namespace:PWAATExtractorSuite.ViewModels.Dialogs"
+                          xmlns:dha="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
+                          mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="250"
+                          x:DataType="vm:AboutDialogViewModel"
+                          x:TypeArguments="vm:AboutDialogViewModel"
+                          x:Class="PWAATExtractorSuite.Views.Dialogs.AboutDialogView"
+                          Width="400" 
+                          Height="250">
+    <Design.DataContext>
+        <vm:AboutDialogViewModel />
+    </Design.DataContext>
+    
+    <DockPanel Margin="10">
+        <Button DockPanel.Dock="Bottom"
+                Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=dha:DialogHost}, 
+                Path=CloseDialogCommand}" 
+                HorizontalAlignment="Center">
+            <TextBlock Text="Close" HorizontalAlignment="Center"/>
+        </Button>
+        <StackPanel Orientation="Vertical" Spacing="10">
+            <TextBlock Text="PWAAT Extractor Suite" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center"/>
+            <TextBlock Text="{Binding VersionInfo.Value}" FontSize="16" HorizontalAlignment="Center"/>
+            <TextBlock TextWrapping="Wrap" TextAlignment="Center">
+                PWAAT Extractor Suite is an open-source tool designed for extracting and inserting assets in Phoenix Wright: Ace Attorney Trilogy.
+            </TextBlock>
+            <TextBlock Text="{Binding Copyright.Value}" FontSize="14" HorizontalAlignment="Center"/>
+            <TextBlock HorizontalAlignment="Center">
+               <TextBlock.Inlines>
+                   <InlineUIContainer>
+                       <HyperlinkButton Content="GitHub" Command="{Binding OpenWebsiteCommand}"
+                                        CommandParameter="https://duckduckgo.com/"/>
+                   </InlineUIContainer>
+               </TextBlock.Inlines> 
+            </TextBlock>
+        </StackPanel>
+    </DockPanel>
+</rxui:ReactiveUserControl>

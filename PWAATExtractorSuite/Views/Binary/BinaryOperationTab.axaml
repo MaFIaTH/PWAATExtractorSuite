@@ -1,0 +1,123 @@
+<rxui:ReactiveUserControl xmlns="https://github.com/avaloniaui"
+                          xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                          xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                          xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                          xmlns:rxui="http://reactiveui.net"
+                          xmlns:m="clr-namespace:PWAATExtractorSuite.Models"
+                          xmlns:binary="clr-namespace:PWAATExtractorSuite.ViewModels.Binary"
+                          xmlns:vm="clr-namespace:PWAATExtractorSuite.ViewModels.Binary"
+                          mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+                          x:DataType="vm:BinaryOperationTabViewModel"
+                          x:TypeArguments="vm:BinaryOperationTabViewModel"
+                          x:Class="PWAATExtractorSuite.Views.Binary.BinaryOperationTab">
+    <Design.DataContext>
+        <vm:BinaryOperationTabViewModel />
+    </Design.DataContext>
+    
+    <DockPanel Margin="10">
+        <DockPanel IsVisible="{Binding WorkspaceDataValid.Value}">
+            <StackPanel 
+            DockPanel.Dock="Left"
+            Orientation="Vertical" 
+            Spacing="10" 
+            Margin="10" >
+            <TextBlock
+                Text="File Mode" FontSize="20" FontWeight="SemiBold"/>
+            <StackPanel Orientation="Vertical">
+                <RadioButton GroupName="FileMode" IsChecked="True"
+                             Command="{Binding SetFileModeCommand}">
+                    <RadioButton.CommandParameter>
+                        <m:FileMode>Single</m:FileMode>
+                    </RadioButton.CommandParameter>
+                    <TextBlock
+                        Text="Single"/>
+                </RadioButton>
+                <RadioButton GroupName="FileMode" 
+                             Command="{Binding SetFileModeCommand}">
+                    <RadioButton.CommandParameter>
+                        <m:FileMode>Batch</m:FileMode>
+                    </RadioButton.CommandParameter>
+                    <TextBlock
+                        Text="Batch"/>
+                </RadioButton>
+            </StackPanel>
+            <TextBlock
+                Text="Operation" FontSize="20" FontWeight="SemiBold"/>
+            <StackPanel Orientation="Vertical">
+                <RadioButton GroupName="Operation" IsChecked="True"
+                             Command="{Binding SetOperationModeCommand}">
+                    <RadioButton.CommandParameter>
+                        <binary:BinaryOperationMode>Extract</binary:BinaryOperationMode>
+                    </RadioButton.CommandParameter>
+                    <TextBlock
+                        Text="Extract"/>
+                </RadioButton>
+                <RadioButton GroupName="Operation"
+                             Command="{Binding SetOperationModeCommand}">
+                    <RadioButton.CommandParameter>
+                        <binary:BinaryOperationMode>Insert</binary:BinaryOperationMode>
+                    </RadioButton.CommandParameter>
+                    <TextBlock
+                        Text="Insert"/>
+                </RadioButton>
+            </StackPanel>
+            <CheckBox
+                IsChecked="{Binding OpenOutputWhenDone.Value, Mode=TwoWay}"
+                ToolTip.Tip="Open the output folder when the operation is complete.">
+                <TextBlock
+                    Text="Open Output Folder When Done?"/>
+            </CheckBox>
+            <Button
+                Command="{Binding StartOperationCommand}"
+                ToolTip.Tip="Start the selected operation with chosen file mode.">
+                <TextBlock
+                    Text="Start Operation"/>
+            </Button>
+        </StackPanel>
+            <Border BorderBrush="DodgerBlue" BorderThickness="1"> 
+                <ScrollViewer Height="300">
+                    <StackPanel
+                        Orientation="Vertical" 
+                        Spacing="10" 
+                        Margin="10" 
+                        HorizontalAlignment="Stretch">
+                        <TextBlock
+                            Text="Select each option for description." FontSize="15"/>
+                        <TextBlock
+                            Text="File Mode Description" FontSize="20" FontWeight="SemiBold" />
+                        <TextBlock
+                            Text="{Binding FileModeDescription.Value}" 
+                            FontSize="15"
+                            TextWrapping="Wrap"
+                            LineSpacing="8"/>
+                        <TextBlock
+                            Text="Operation Description" FontSize="20" FontWeight="SemiBold"/>
+                        <TextBlock 
+                            Text="{Binding OperationDescription.Value}" 
+                            FontSize="15" 
+                            TextWrapping="Wrap"
+                            LineSpacing="8"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </DockPanel>
+        <DockPanel 
+            IsVisible="{Binding !WorkspaceDataValid.Value}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel.Styles>
+                    <Style Selector="TextBlock">
+                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                    </Style>
+                </StackPanel.Styles>
+                <TextBlock 
+                    Text="Workspace is invalid!"
+                    FontWeight="SemiBold"
+                    FontSize="26"/>
+                <TextBlock
+                    TextWrapping="Wrap"
+                    Text="Check the Workspace tab to see if all the folders were set up correctly, or try running the Wizard again."/>
+            </StackPanel>
+        </DockPanel>
+    </DockPanel>
+</rxui:ReactiveUserControl>

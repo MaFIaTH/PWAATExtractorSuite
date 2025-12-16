@@ -1,0 +1,61 @@
+<rxui:ReactiveUserControl xmlns="https://github.com/avaloniaui"
+                              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                              xmlns:vm="clr-namespace:PWAATExtractorSuite.ViewModels"
+                              xmlns:rxui="http://reactiveui.net"
+                              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+                              x:TypeArguments="vm:OnBoardingViewModel"
+                              x:Class="PWAATExtractorSuite.Views.OnBoardingView"
+                              x:DataType="vm:OnBoardingViewModel">
+    <Design.DataContext>
+        <vm:OnBoardingViewModel />
+    </Design.DataContext>
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
+        <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="20">
+            <TextBlock Text="Welcome to PWAAT Extractor Suite!" 
+                       FontSize="24" 
+                       FontWeight="Bold" 
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="This tool helps you extract and manage PWAAT data efficiently." 
+                       FontSize="16" 
+                       HorizontalAlignment="Center" 
+                       TextAlignment="Center" 
+                       Width="400"/>
+            <TextBlock Text="Which file type would you like to start first?" 
+                       FontSize="16" 
+                       HorizontalAlignment="Center" 
+                       TextAlignment="Center" 
+                       Width="400"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="20">
+            <Button 
+                Command="{Binding ToBinaryExtractorCommand}" 
+                Width="150" 
+                Height="40" 
+                HorizontalAlignment="Center">
+                <TextBlock 
+                    Text="Binary (.bin, .cho)" 
+                    HorizontalAlignment="Center" 
+                    VerticalAlignment="Center"/>
+            </Button>
+            <Button 
+                IsEnabled="False"
+                ToolTip.Tip="Coming Soon!"
+                ToolTip.ShowOnDisabled="True"
+                Width="150" 
+                Height="40" 
+                HorizontalAlignment="Center">
+                <TextBlock
+                    Text="Scenario (.mdt)" 
+                    HorizontalAlignment="Center" 
+                    VerticalAlignment="Center"/>
+            </Button>
+        </StackPanel>
+        <TextBlock Text="Already have a workspace? You can open it from the File menu."
+                   FontSize="12" 
+                   HorizontalAlignment="Center" 
+                   TextAlignment="Center" 
+                   Width="400"/>
+    </StackPanel>
+</rxui:ReactiveUserControl>

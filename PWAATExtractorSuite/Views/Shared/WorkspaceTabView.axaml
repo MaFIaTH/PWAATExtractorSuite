@@ -1,0 +1,103 @@
+<rxui:ReactiveUserControl xmlns="https://github.com/avaloniaui"
+                          xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                          xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                          xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                          xmlns:rxui="http://reactiveui.net"
+                          xmlns:vm="clr-namespace:PWAATExtractorSuite.ViewModels.Shared"
+                          mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+                          x:DataType="vm:WorkspaceTabViewModel"
+                          x:TypeArguments="vm:WorkspaceTabViewModel"
+                          x:Class="PWAATExtractorSuite.Views.Shared.WorkspaceTabView">
+    <Design.DataContext>
+        <vm:WorkspaceTabViewModel />
+    </Design.DataContext>
+    
+    <StackPanel Orientation="Vertical" Spacing="10" Margin="10">
+        <StackPanel Orientation="Horizontal" Spacing="20">
+            <TextBlock 
+                ToolTip.Tip="Selecting the root folder will load all workspace folders contained within."
+                Text="{Binding Root.Name.Value, StringFormat={}{0} Folder}" 
+                HorizontalAlignment="Center" 
+                VerticalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBox 
+                    Text="{Binding Root.Path.Value, Mode=TwoWay}"
+                    Width="200">
+                    <Interaction.Behaviors>
+                        <ExecuteCommandOnLostFocusBehavior Command="{Binding RootTextBoxLostFocusCommand}"/>
+                    </Interaction.Behaviors>
+                </TextBox>
+                <Button
+                    Command="{Binding BrowseRootPathCommand}"
+                    ToolTip.Tip="Browse for Workspace Root Folder">
+                    <TextBlock Text="Browse"/>
+                </Button>
+                <Button
+                    Command="{Binding OpenRootPathCommand}"
+                    ToolTip.Tip="Open Workspace Root Folder in File Explorer">
+                    <TextBlock Text="Open"/>
+                </Button>
+            </StackPanel>
+        </StackPanel>
+        <Expander 
+            ToolTip.Tip="Lists all workspace folders found in the selected root folder."
+            Header="Children Folders" 
+            HorizontalAlignment="Stretch">
+            <ScrollViewer>
+                <ItemsControl ItemsSource="{Binding ChildrenView}" x:Name="ItemsControl">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="10"></StackPanel>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid ColumnDefinitions="200,Auto"
+                                  ColumnSpacing="10"
+                                  HorizontalAlignment="Left"
+                                  VerticalAlignment="Center">
+                                <TextBlock 
+                                    Grid.Column="0"
+                                    Text="{Binding Name.Value, StringFormat={}{0} Folder}"
+                                    HorizontalAlignment="Left" 
+                                    VerticalAlignment="Center"/>
+                                <StackPanel 
+                                    Grid.Column="1"
+                                    Orientation="Horizontal" 
+                                    Spacing="10">
+                                    <TextBox 
+                                        Text="{Binding Path.Value, Mode=TwoWay}" 
+                                        Width="200">
+                                        <Interaction.Behaviors>
+                                            <ExecuteCommandOnLostFocusBehavior Command="{Binding 
+                                            RelativeSource={RelativeSource FindAncestor, AncestorType=ItemsControl}, 
+                                            Path=((vm:WorkspaceTabViewModel)DataContext).ChildTextBoxLostFocusCommand}"
+                                                                               CommandParameter="{Binding}"/>
+                                        </Interaction.Behaviors>
+                                    </TextBox>
+                                    <Button
+                                        Command="{Binding 
+                                                        RelativeSource={RelativeSource FindAncestor, AncestorType=ItemsControl}, 
+                                                        Path=((vm:WorkspaceTabViewModel)DataContext).BrowseChildPathCommand}"
+                                        CommandParameter="{Binding}"
+                                        ToolTip.Tip="Browse for Folder">
+                                        <TextBlock Text="Browse"/>
+                                    </Button>
+                                    <Button
+                                        Command="{Binding 
+                                                        RelativeSource={RelativeSource FindAncestor, AncestorType=ItemsControl}, 
+                                                        Path=((vm:WorkspaceTabViewModel)DataContext).OpenChildPathCommand}"
+                                        CommandParameter="{Binding}"
+                                        ToolTip.Tip="Open Folder in File Explorer">
+                                        <TextBlock Text="Open"/>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Expander>
+        <Panel/>
+    </StackPanel>
+</rxui:ReactiveUserControl>

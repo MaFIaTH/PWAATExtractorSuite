@@ -1,0 +1,43 @@
+<rxui:ReactiveWindow xmlns="https://github.com/avaloniaui"
+                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                         xmlns:vm="using:PWAATExtractorSuite.ViewModels"
+                         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                         xmlns:views="clr-namespace:PWAATExtractorSuite.Views"
+                         xmlns:rxui="http://reactiveui.net"
+                         xmlns:pwaatExtractorSuite="clr-namespace:PWAATExtractorSuite"
+                         xmlns:dha="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
+                         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+                         x:Class="PWAATExtractorSuite.Views.MainWindow"
+                         x:DataType="vm:MainViewModel"
+                         x:TypeArguments="vm:MainViewModel" 
+                         Icon="/Assets/avalonia-logo.ico"
+                         Title="{Binding WindowTitle.Value}"
+                         Width="800"
+                         Height="600">
+        <Design.DataContext>
+                <vm:MainViewModel />
+        </Design.DataContext>
+        <dha:DialogHost IsMultipleDialogsEnabled="True">
+                <dha:DialogHost.DialogContent>
+                        <!-- put your dialog content here-->
+                </dha:DialogHost.DialogContent>
+                <DockPanel>
+                        <views:MenuView DockPanel.Dock="Top" DataContext="{Binding ViewModels[Menu]}"/>
+                        <rxui:RoutedViewHost Router="{Binding Router}">
+                                <rxui:RoutedViewHost.DefaultContent>
+                                        <TextBlock 
+                                                Text="Error: Routing is not configured correctly!"
+                                                Foreground="Red"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                FontSize="20"/>
+                                </rxui:RoutedViewHost.DefaultContent>
+                                <rxui:RoutedViewHost.ViewLocator>
+                                        <pwaatExtractorSuite:RoutableViewLocator />
+                                </rxui:RoutedViewHost.ViewLocator>
+                        </rxui:RoutedViewHost>
+                </DockPanel>
+        </dha:DialogHost>
+        
+</rxui:ReactiveWindow>

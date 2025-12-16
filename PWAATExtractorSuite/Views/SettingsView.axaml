@@ -1,0 +1,47 @@
+<rxui:ReactiveUserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:rxui="http://reactiveui.net"
+             xmlns:vm="clr-namespace:PWAATExtractorSuite.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:DataType="vm:SettingsViewModel"
+             x:TypeArguments="vm:SettingsViewModel"
+             x:Class="PWAATExtractorSuite.Views.SettingsView">
+    <Design.DataContext>
+        <vm:SettingsViewModel />
+    </Design.DataContext>
+    
+    <DockPanel>
+        <StackPanel 
+            DockPanel.Dock="Bottom"
+            Orientation="Horizontal"
+            Spacing="10"
+            Margin="10"
+            HorizontalAlignment="Right">
+            <Button 
+                ToolTip.Tip="Apply the changes without closing the settings window."
+                Command="{Binding ApplyCommand}">
+                <TextBlock Text="Apply"/>
+            </Button>
+            <Button 
+                ToolTip.Tip="Save the changes and close the settings window."
+                Command="{Binding SaveCommand}">
+                <TextBlock Text="Save"/>
+            </Button>
+            <Button 
+                ToolTip.Tip="Return to the previous window."
+                Command="{Binding BackCommand}">
+                <TextBlock Text="Back"/>
+            </Button>
+        </StackPanel>
+        <StackPanel Orientation="Vertical" Margin="10">
+            <TextBlock Text="General" FontWeight="SemiBold" FontSize="20"/>
+            <CheckBox 
+                ToolTip.Tip="If enabled, the application will automatically open the last used workspace upon startup."
+                IsChecked="{Binding OpenLastWorkspaceOnStartup.Value}">
+                <TextBlock Text="Open Last Workspace on Startup"/>
+            </CheckBox>
+        </StackPanel>
+    </DockPanel>
+</rxui:ReactiveUserControl>

@@ -15,7 +15,7 @@
     <StackPanel Orientation="Vertical" Spacing="10" Margin="10">
         <StackPanel Orientation="Horizontal" Spacing="20">
             <TextBlock 
-                ToolTip.Tip="Selecting the root folder will load all workspace folders contained within."
+                ToolTip.Tip="Select the workspace root folder."
                 Text="{Binding Root.Name.Value, StringFormat={}{0} Folder}" 
                 HorizontalAlignment="Center" 
                 VerticalAlignment="Center"/>
@@ -42,9 +42,10 @@
         <Expander 
             ToolTip.Tip="Lists all workspace folders found in the selected root folder."
             Header="Children Folders" 
-            HorizontalAlignment="Stretch">
+            HorizontalAlignment="Stretch"
+            Height="400">
             <ScrollViewer>
-                <ItemsControl ItemsSource="{Binding ChildrenView}" x:Name="ItemsControl">
+                <ItemsControl ItemsSource="{Binding ChildrenView}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <StackPanel Spacing="10"></StackPanel>

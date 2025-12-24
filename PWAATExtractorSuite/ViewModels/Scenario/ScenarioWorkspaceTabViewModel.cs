@@ -3,18 +3,18 @@ using PWAATExtractorSuite.Models;
 using PWAATExtractorSuite.ViewModels.Shared;
 using ReactiveUI;
 
-namespace PWAATExtractorSuite.ViewModels.Binary;
+namespace PWAATExtractorSuite.ViewModels.Scenario;
 
-public class BinaryWorkspaceTabViewModel : WorkspaceTabViewModel
-{
-    private readonly BinaryExtractorModel _model;
-    public BinaryWorkspaceTabViewModel()
+public class ScenarioWorkspaceTabViewModel : WorkspaceTabViewModel
+{ 
+    private readonly ScenarioExtractorModel _model;
+    public ScenarioWorkspaceTabViewModel()
     {
         
     }
 
-    public BinaryWorkspaceTabViewModel(
-        BinaryExtractorModel model,
+    public ScenarioWorkspaceTabViewModel(
+        ScenarioExtractorModel model,
         IDialogService dialogService, 
         ILauncher launcher)
         : base(dialogService, launcher)
@@ -25,6 +25,11 @@ public class BinaryWorkspaceTabViewModel : WorkspaceTabViewModel
         Children.Add(new WorkspacePathHandler("Extraction Output", string.Empty));
         Children.Add(new WorkspacePathHandler("Insertion Input", string.Empty));
         Children.Add(new WorkspacePathHandler("Insertion Output", string.Empty));
+        Children.Add(new WorkspacePathHandler("Simplification Input", string.Empty));
+        Children.Add(new WorkspacePathHandler("Simplification Output", string.Empty));
+        Children.Add(new WorkspacePathHandler("Desimplification Original", string.Empty));
+        Children.Add(new WorkspacePathHandler("Desimplification Input", string.Empty));
+        Children.Add(new WorkspacePathHandler("Desimplification Output", string.Empty));
         //this.WhenActivated(BindWhenSelfActivate);
     }
 
@@ -52,6 +57,21 @@ public class BinaryWorkspaceTabViewModel : WorkspaceTabViewModel
                 break;
             case 3:
                 workspaceData.InsertionOutputPath = path;
+                break;
+            case 4:
+                workspaceData.SimplificationInputPath = path;
+                break;
+            case 5:
+                workspaceData.SimplificationOutputPath = path;
+                break;
+            case 6:
+                workspaceData.DesimplificationOriginalPath = path;
+                break;
+            case 7:
+                workspaceData.DesimplificationInputPath = path;
+                break;
+            case 8:
+                workspaceData.DesimplificationOutputPath = path;
                 break;
         }
         _model.WorkspaceData.OnNext(workspaceData);

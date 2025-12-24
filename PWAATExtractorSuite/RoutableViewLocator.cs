@@ -1,7 +1,9 @@
 using System;
 using PWAATExtractorSuite.ViewModels;
 using PWAATExtractorSuite.ViewModels.Binary;
+using PWAATExtractorSuite.ViewModels.Scenario;
 using PWAATExtractorSuite.Views.Binary;
+using PWAATExtractorSuite.Views.Scenario;
 using ReactiveUI;
 using IViewLocator = ReactiveUI.IViewLocator;
 
@@ -28,6 +30,12 @@ public class RoutableViewLocator : IViewLocator
                 };
             case BinaryExtractorViewModel context:
                 return new BinaryExtractorView
+                {
+                    ViewModel = context,
+                    DataContext = context,
+                };
+            case ScenarioExtractorViewModel context:
+                return new ScenarioExtractorView
                 {
                     ViewModel = context,
                     DataContext = context,

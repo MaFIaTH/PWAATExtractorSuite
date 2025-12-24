@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using System.Linq;
+using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,6 +12,7 @@ using PWAATExtractorSuite.Models;
 using PWAATExtractorSuite.ViewModels;
 using PWAATExtractorSuite.ViewModels.Binary;
 using PWAATExtractorSuite.ViewModels.Dialogs;
+using PWAATExtractorSuite.ViewModels.Scenario;
 using PWAATExtractorSuite.ViewModels.Shared;
 using PWAATExtractorSuite.Views;
 using ReactiveUI;
@@ -20,6 +22,7 @@ namespace PWAATExtractorSuite;
 public partial class App : Application
 {
     public ServiceProvider ServiceProvider { get; private set; } = null!;
+    public event EventHandler<ShutdownRequestedEventArgs>? ShutdownRequested;
     
     public override void Initialize()
     {
@@ -40,6 +43,7 @@ public partial class App : Application
             // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
             // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
             DisableAvaloniaDataAnnotationValidation();
+            desktop.ShutdownRequested += This_ShutdownRequested;
             var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
             desktop.MainWindow = mainWindow;
             Console.WriteLine("Application started in Desktop mode.");
@@ -93,13 +97,21 @@ public partial class App : Application
         services.AddTransient<BinaryExtractorViewModel>();
         services.AddTransient<BinaryOperationTabViewModel>();
         
+        //Scenario Extractor
+        services.AddSingleton<ScenarioExtractorModel>();
+        services.AddTransient<ScenarioExtractorViewModel>();
+        services.AddTransient<ScenarioSpeakerDefinitionTabViewModel>();
+        services.AddTransient<ScenarioOperationTabViewModel>();
+        
         //Shared ViewModels
         services.AddKeyedTransient<WorkspaceTabViewModel, BinaryWorkspaceTabViewModel>(ExtractorType.Binary);
+        services.AddKeyedTransient<WorkspaceTabViewModel, ScenarioWorkspaceTabViewModel>(ExtractorType.Scenario);
         
         //Dialog ViewModels
         services.AddTransient<NotificationDialogViewModel>();
         services.AddTransient<WizardDialogViewModel>();
         services.AddTransient<AboutDialogViewModel>();
+        services.AddTransient<ConfirmationDialogViewModel>();
         
         //Dialog Services
         services.AddSingleton<IDialogService>(sp => new DialogService(
@@ -121,11 +133,24 @@ public partial class App : Application
         var settingsViewModel = provider.GetRequiredService<SettingsViewModel>();
         var onBoardingViewModel = provider.GetRequiredService<OnBoardingViewModel>();
         var binaryExtractorViewModel = provider.GetRequiredService<BinaryExtractorViewModel>();
+        var scenarioExtractorViewModel = provider.GetRequiredService<ScenarioExtractorViewModel>();
         mainViewModel.AddViewModel(ViewModelType.Menu, menuViewModel);
         mainViewModel.AddViewModel(ViewModelType.MainRouter, routerViewModel!);
         mainViewModel.AddViewModel(ViewModelType.Settings, settingsViewModel);
         mainViewModel.AddViewModel(ViewModelType.OnBoarding, onBoardingViewModel);
         mainViewModel.AddViewModel(ViewModelType.BinaryExtractor, binaryExtractorViewModel);
+        mainViewModel.AddViewModel(ViewModelType.ScenarioExtractor, scenarioExtractorViewModel);
+    }
+    
+    protected virtual void This_ShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
+    { 
+        e.Cancel = true;
+        OnShutdownRequested(e);
+    }
+    
+    protected virtual void OnShutdownRequested(ShutdownRequestedEventArgs e)
+    {
+        ShutdownRequested?.Invoke(this, e);
     }
 
     private void DisableAvaloniaDataAnnotationValidation()

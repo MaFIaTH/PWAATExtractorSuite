@@ -15,7 +15,10 @@ namespace PWAATExtractorSuite.ViewModels.Shared;
 public abstract class WorkspaceTabViewModel : ViewModelBase, IActivatableViewModel
 {
     public ViewModelActivator Activator { get; } = new();
-    public WorkspacePathHandler Root { get; } = new("Root", string.Empty);
+    public WorkspacePathHandler Root { get; } = new("Root", string.Empty)
+    {
+        IsRoot = true
+    };
     public ObservableList<WorkspacePathHandler> Children { get; } =
     [
         new("Path 1", @"C:\Path\To\Folder1"),
@@ -23,11 +26,8 @@ public abstract class WorkspaceTabViewModel : ViewModelBase, IActivatableViewMod
         new("Path 3", @"C:\Path\To\Folder3"),
         new("Path 4", @"C:\Path\To\Folder4")
     ];
-    
-    public abstract IWorkspaceData WorkspaceData { get; }
-    public event Action<IWorkspaceData> WorkspaceDataChanged;
 
-    public NotifyCollectionChangedSynchronizedViewList<WorkspacePathHandler> ChildrenView { get; }
+    public NotifyCollectionChangedSynchronizedViewList<WorkspacePathHandler> ChildrenView { get; private set; }
     
     public ReactiveCommand BrowseRootPathCommand { get; } = new();
     public ReactiveCommand OpenRootPathCommand { get; } = new();
@@ -51,15 +51,10 @@ public abstract class WorkspaceTabViewModel : ViewModelBase, IActivatableViewMod
     {
         _dialogService = dialogService;
         _launcher = launcher;
-        Children.Clear();
-        Children.Add(new WorkspacePathHandler("Extraction Input", string.Empty));
-        Children.Add(new WorkspacePathHandler("Extraction Output", string.Empty));
-        Children.Add(new WorkspacePathHandler("Insertion Input", string.Empty));
-        Children.Add(new WorkspacePathHandler("Insertion Output", string.Empty));
         this.WhenActivated(BindWhenSelfActivate);
     }
 
-    private void BindWhenSelfActivate(CompositeDisposable disposables)
+    protected void BindWhenSelfActivate(CompositeDisposable disposables)
     {
         Root.PreviousPath = Root.Path.Value;
         foreach (var child in Children)
@@ -70,6 +65,7 @@ public abstract class WorkspaceTabViewModel : ViewModelBase, IActivatableViewMod
 
     public void BindWhenParentActivate(CompositeDisposable disposables)
     {
+        ChildrenView = Children.ToNotifyCollectionChanged(SynchronizationContextCollectionEventDispatcher.Current);
         BrowseRootPathCommand
             .SubscribeAwait((_, _) => GetFolderPath(Root), AwaitOperation.Drop)
             .AddTo(disposables);
@@ -77,10 +73,10 @@ public abstract class WorkspaceTabViewModel : ViewModelBase, IActivatableViewMod
             .SubscribeAwait((handler, _) => GetFolderPath(handler), AwaitOperation.Drop)
             .AddTo(disposables);
         OpenRootPathCommand
-            .SubscribeAwait((_, _) => OpenPath(Root), AwaitOperation.Drop)
+            .SubscribeAwait((_, _) => OpenDirectory(Root), AwaitOperation.Drop)
             .AddTo(disposables);
         OpenChildPathCommand
-            .SubscribeAwait((handler, _) => OpenPath(handler), AwaitOperation.Drop)
+            .SubscribeAwait((handler, _) => OpenDirectory(handler), AwaitOperation.Drop)
             .AddTo(disposables);
         RootTextBoxLostFocusCommand
             .SubscribeAwait((_, _) => OnTextBoxLostFocus(Root), AwaitOperation.Drop)
@@ -97,70 +93,29 @@ public abstract class WorkspaceTabViewModel : ViewModelBase, IActivatableViewMod
     
     private async ValueTask GetFolderPath(WorkspacePathHandler handler)
     {
-        var result = await _dialogService.OpenFolderPickerAsync(new FolderPickerOpenOptions()
-        {
-            Title = "Select Root Workspace Path",
-            AllowMultiple = false
-        });
-        if (result.Count == 0)
-        {
-            Console.WriteLine("Folder picker cancelled");
-            return;
-        }
-        var path = result[0].Path.LocalPath;
-        if (!Directory.Exists(path))
-        {
-            await _dialogService.ShowNotificationDialog("Path Not Found", $"""The selected path "{path}" does not exist.""");
-            Console.WriteLine($"Path does not exist: {path}");
-            return;
-        }
-        handler.Path.Value = path;
-        Console.WriteLine($"{handler.Name.Value} path set to: {path}");
-        handler.PreviousPath = path;
-        WorkspaceDataChanged.Invoke(WorkspaceData);
+        await handler.GetDirectoryPath(_dialogService);
+        ApplyToWorkspaceData(handler);
     }
 
-    private async ValueTask OpenPath(WorkspacePathHandler handler)
+    private async ValueTask OpenDirectory(WorkspacePathHandler handler)
     {
-        var path = handler.Path.Value;
-        if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
-        {
-            await _dialogService.ShowNotificationDialog("Path Not Found",
-                $"""The selected path "{path}" does not exist.""");
-            Console.WriteLine($"Path does not exist: {path}");
-            return;
-        }
-        var directoryInfo = new DirectoryInfo(path);
-        var success = await _launcher.LaunchDirectoryInfoAsync(directoryInfo);
-        if (!success)
-        {
-            await _dialogService.ShowNotificationDialog("Error", $"Failed to open path: {path}");
-            Console.WriteLine($"Failed to open path: {path}");
-        }
+        await handler.OpenDirectory(_dialogService, _launcher);
     }
 
     private async ValueTask OnTextBoxLostFocus(WorkspacePathHandler handler)
     {
-        var path = handler.Path.Value;
-        if (handler.PreviousPath.Equals(path)) return;
-        if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
-        {
-            await _dialogService.ShowNotificationDialog("Path Not Found",
-                $"""The selected path "{path}" does not exist. Resetting to previous value.""");
-            Console.WriteLine($"Path does not exist: {path}");
-            handler.Path.Value = handler.PreviousPath;
-            return;
-        }
-        handler.PreviousPath = path;
-        WorkspaceDataChanged.Invoke(WorkspaceData);
+        await handler.OnDirectoryTextBoxLostFocus(_dialogService);
+        ApplyToWorkspaceData(handler);
     }
+
+    protected abstract void ApplyToWorkspaceData(WorkspacePathHandler handler);
 }
 
 public class WorkspacePathHandler
 {
     public BindableReactiveProperty<string> Name { get; } = new(string.Empty);
     public BindableReactiveProperty<string> Path { get; } = new(string.Empty);
-    
+    public bool IsRoot { get; set; }
     public string PreviousPath { get; set; }
     
     public WorkspacePathHandler(string name = "", string path = "")
@@ -171,7 +126,141 @@ public class WorkspacePathHandler
     }
 }
 
+public static class WorkspacePathUtils
+{
+    extension(WorkspacePathHandler handler)
+    {
+        public async Task GetDirectoryPath(IDialogService dialogService)
+        {
+            var result = await dialogService.OpenFolderPickerAsync(new FolderPickerOpenOptions()
+            {
+                Title = "Select Directory",
+                AllowMultiple = false
+            });
+            if (result.Count == 0)
+            {
+                Console.WriteLine("Folder picker cancelled");
+                return;
+            }
+            var path = result[0].Path.LocalPath;
+            if (!Directory.Exists(path))
+            {
+                await dialogService.ShowNotificationDialog("Path Not Found", $"""The selected path "{path}" does not exist.""");
+                Console.WriteLine($"Path does not exist: {path}");
+                return;
+            }
+            handler.Path.Value = path;
+            Console.WriteLine($"{handler.Name.Value} path set to: {path}");
+            handler.PreviousPath = path;
+        }
+        
+        public async Task GetFilePath(IDialogService dialogService, FilePickerFileType[]? filter = null)
+        {
+            var typeFilter = filter ??
+            [
+                new FilePickerFileType("All Files")
+                    {
+                        Patterns = ["*"],
+                        MimeTypes = ["*/*"]
+                    }
+            ];
+            var result = await dialogService.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Select File",
+                AllowMultiple = false,
+                FileTypeFilter = typeFilter
+            });
+            if (result.Count == 0)
+            {
+                Console.WriteLine("File picker cancelled");
+                return;
+            }
+            var path = result[0].Path.LocalPath;
+            if (!File.Exists(path))
+            {
+                await dialogService.ShowNotificationDialog("File Not Found", $"""The selected file "{path}" does not exist.""");
+                Console.WriteLine($"File does not exist: {path}");
+                return;
+            }
+            handler.Path.Value = path;
+            Console.WriteLine($"{handler.Name.Value} file set to: {path}");
+            handler.PreviousPath = path;
+        }
+
+        public async Task OpenDirectory(IDialogService dialogService, ILauncher launcher)
+        {
+            var path = handler.Path.Value;
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+            {
+                await dialogService.ShowNotificationDialog("Path Not Found",
+                    $"""The selected path "{path}" does not exist.""");
+                Console.WriteLine($"Path does not exist: {path}");
+                return;
+            }
+            var directoryInfo = new DirectoryInfo(path);
+            var success = await launcher.LaunchDirectoryInfoAsync(directoryInfo);
+            if (!success)
+            {
+                await dialogService.ShowNotificationDialog("Error", $"Failed to open path: {path}");
+                Console.WriteLine($"Failed to open path: {path}");
+            }
+        }
+
+        public async Task OpenFile(IDialogService dialogService, ILauncher launcher)
+        {
+            var path = handler.Path.Value;
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            {
+                await dialogService.ShowNotificationDialog("File Not Found",
+                    $"""The selected file "{path}" does not exist.""");
+                Console.WriteLine($"File does not exist: {path}");
+                return;
+            }
+            var fileInfo = new FileInfo(path);
+            var success = await launcher.LaunchFileInfoAsync(fileInfo);
+            if (!success)
+            {
+                await dialogService.ShowNotificationDialog("Error", $"Failed to open file: {path}");
+                Console.WriteLine($"Failed to open file: {path}");
+            }
+        }
+
+        public async Task OnDirectoryTextBoxLostFocus(IDialogService dialogService)
+        {
+            var path = handler.Path.Value;
+            if (handler.PreviousPath.Equals(path)) return;
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+            {
+                await dialogService.ShowNotificationDialog("Path Not Found",
+                    $"""The selected path "{path}" does not exist. Resetting to previous value.""");
+                Console.WriteLine($"Path does not exist: {path}");
+                handler.Path.Value = handler.PreviousPath;
+                return;
+            }
+            handler.PreviousPath = path;
+        }
+        
+        public async Task OnFileTextBoxLostFocus(IDialogService dialogService)
+        {
+            var path = handler.Path.Value;
+            if (handler.PreviousPath.Equals(path)) return;
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            {
+                await dialogService.ShowNotificationDialog("File Not Found",
+                    $"""The selected file "{path}" does not exist. Resetting to previous value.""");
+                Console.WriteLine($"File does not exist: {path}");
+                handler.Path.Value = handler.PreviousPath;
+                return;
+            }
+            handler.PreviousPath = path;
+        }
+    }
+}
+
 public class DesignerWorkspaceTabViewModel : WorkspaceTabViewModel
 {
-    public override IWorkspaceData WorkspaceData => null!;
+    protected override void ApplyToWorkspaceData(WorkspacePathHandler handler)
+    {
+        throw new NotImplementedException();
+    }
 }

@@ -30,22 +30,26 @@
         </StackPanel>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="20">
             <Button 
-                Command="{Binding ToBinaryExtractorCommand}" 
+                Command="{Binding ToExtractorCommand}"
                 Width="150" 
                 Height="40" 
                 HorizontalAlignment="Center">
+                <Button.CommandParameter>
+                    <vm:ViewModelType>BinaryExtractor</vm:ViewModelType>
+                </Button.CommandParameter>
                 <TextBlock 
                     Text="Binary (.bin, .cho)" 
                     HorizontalAlignment="Center" 
                     VerticalAlignment="Center"/>
             </Button>
             <Button 
-                IsEnabled="False"
-                ToolTip.Tip="Coming Soon!"
-                ToolTip.ShowOnDisabled="True"
+                Command="{Binding ToExtractorCommand}"
                 Width="150" 
                 Height="40" 
                 HorizontalAlignment="Center">
+                <Button.CommandParameter>
+                    <vm:ViewModelType>ScenarioExtractor</vm:ViewModelType>
+                </Button.CommandParameter>
                 <TextBlock
                     Text="Scenario (.mdt)" 
                     HorizontalAlignment="Center" 

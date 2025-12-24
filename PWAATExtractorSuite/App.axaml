@@ -14,9 +14,10 @@
     <Application.Styles>
         <FluentTheme />
         <dha:DialogHostStyles />
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
     </Application.Styles>
              
      <Application.Resources>
-         <system:String x:Key="AppVersion">1.0.0</system:String>
+         <system:String x:Key="AppVersion">1.1.0</system:String>
      </Application.Resources>
 </Application>

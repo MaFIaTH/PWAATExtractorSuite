@@ -5,6 +5,7 @@ using Avalonia.Platform.Storage;
 using MessagePack;
 using PWAATExtractorSuite.Models;
 using PWAATExtractorSuite.ViewModels.Dialogs;
+using R3;
 
 namespace PWAATExtractorSuite;
 
@@ -12,41 +13,93 @@ public interface ISaveService
 {
     IWorkspaceData? CurrentWorkspaceData { get; set; }
     string? CurrentWorkspacePath { get; set; }
+    bool IsDirty { get; }
     IDialogService DialogService { get; }
-    Task<IWorkspaceData?> TryLoadWorkspaceDataAsync(string filePath);
+    Task<IWorkspaceData?> TryLoadWorkspaceDataAsync(string filePath, Type? expectedType = null);
     Task<bool> TrySaveWorkspaceDataAsync(string filePath, IWorkspaceData workspaceData);
+    event Action WorkspaceChanged;
 }
 
-public class SaveService(IDialogService dialogService, AppSettings appSettings) : ISaveService
+public class SaveService : ISaveService
 {
-    public IDialogService DialogService => dialogService;
-    public IWorkspaceData? CurrentWorkspaceData { get; set; }
-    public string? CurrentWorkspacePath { get; set; }
+    public IDialogService DialogService => _dialogService;
+
+    public IWorkspaceData? CurrentWorkspaceData
+    {
+        get;
+        set
+        {
+            IsDirty = _lastSavedWorkspaceData == null || 
+                      !_lastSavedWorkspaceData.CompareMemberwise(value) || 
+                      _lastSavedWorkspacePath == null ||
+                      !_lastSavedWorkspacePath.Equals(CurrentWorkspacePath);
+            field = value;
+            WorkspaceChanged.Invoke();
+        }
+    }
+
+    public string? CurrentWorkspacePath
+    {
+        get;
+        set
+        {
+            field = value;
+            WorkspaceChanged.Invoke();
+        }
+    }
+
+    public bool IsDirty { get; private set; }
+
+    public event Action WorkspaceChanged = () => { };
     
-    public async Task<IWorkspaceData?> TryLoadWorkspaceDataAsync(string filePath)
+    private readonly IDialogService _dialogService;
+    private readonly AppSettings _appSettings;
+    private IWorkspaceData? _lastSavedWorkspaceData;
+    private string? _lastSavedWorkspacePath;
+
+    public SaveService(IDialogService dialogService, AppSettings appSettings)
+    {
+        _dialogService = dialogService;
+        _appSettings = appSettings;
+    }
+
+    public async Task<IWorkspaceData?> TryLoadWorkspaceDataAsync(string filePath, Type? expectedType = null)
     {
         if (!File.Exists(filePath))
         {
-            await dialogService.ShowNotificationDialog("File not found", $"""The file at path "{filePath}" does not exist.""");
+            await _dialogService.ShowNotificationDialog("File not found", $"""The file at path "{filePath}" does not exist.""");
             return null;
         }
         try
         {
             var stream = File.OpenRead(filePath);
             var workspaceData = await MessagePackSerializer.DeserializeAsync<IWorkspaceData>(stream);
-            var json = MessagePackSerializer.SerializeToJson(workspaceData);
-            Console.WriteLine($"Loaded workspace data from {filePath}:\n{json}");
+            if (expectedType != null)
+            {
+                if (workspaceData.GetType() != expectedType)
+                {
+                    await _dialogService.ShowNotificationDialog("Error loading file",
+                        $"The loaded workspace data is of incorrect type.\n" +
+                        $"Expected: {expectedType.Name} Got: {workspaceData?.GetType().Name ?? "null"}");
+                    stream.Close();
+                    await stream.DisposeAsync();
+                    return null;
+                }
+            }
             stream.Close();
             await stream.DisposeAsync();
+            await workspaceData.Load();
+            _lastSavedWorkspaceData = workspaceData.Copy();
+            _lastSavedWorkspacePath = filePath;
             CurrentWorkspaceData = workspaceData;
             CurrentWorkspacePath = filePath;
-            appSettings.Data.LastOpenedWorkspacePath = filePath;
-            await appSettings.Save();
+            _appSettings.Data.LastOpenedWorkspacePath = filePath;
+            await _appSettings.Save();
             return workspaceData;
         }
         catch (Exception ex)
         {
-            await dialogService.ShowNotificationDialog("Error loading file", $"""An error occurred while loading the file: {ex.Message}""");
+            await _dialogService.ShowNotificationDialog("Error loading file", $"""An error occurred while loading the file: {ex.Message}""");
             return null;
         }
     }
@@ -57,20 +110,21 @@ public class SaveService(IDialogService dialogService, AppSettings appSettings) 
         {
             var stream = File.OpenWrite(filePath);
             await MessagePackSerializer.SerializeAsync(stream, workspaceData);
-            var json = MessagePackSerializer.SerializeToJson(workspaceData);
-            Console.WriteLine($"Saved workspace data to {filePath}:\n{json}");
             await stream.FlushAsync();
             stream.Close();
             await stream.DisposeAsync();
+            await workspaceData.Save();
+            _lastSavedWorkspaceData = workspaceData.Copy();
+            _lastSavedWorkspacePath = filePath;
             CurrentWorkspaceData = workspaceData;
             CurrentWorkspacePath = filePath;
-            appSettings.Data.LastOpenedWorkspacePath = filePath;
-            await appSettings.Save();
+            _appSettings.Data.LastOpenedWorkspacePath = filePath;
+            await _appSettings.Save();
             return true;
         }
         catch (Exception ex)
         {
-            await dialogService.ShowNotificationDialog("Error saving file", $"""An error occurred while saving the file: {ex.Message}""");
+            await _dialogService.ShowNotificationDialog("Error saving file", $"""An error occurred while saving the file: {ex.Message}""");
             return false;
         }
     }
@@ -80,7 +134,7 @@ public static class SaveServiceExtensions
 {
     extension(ISaveService saveService)
     {
-        public async Task<IWorkspaceData?> OpenWorkspaceAsync()
+        public async Task<IWorkspaceData?> OpenWorkspaceAsync(Type? expectedType = null)
         {
             var filePath = await saveService.DialogService.OpenFilePickerAsync(new FilePickerOpenOptions()
             {
@@ -90,7 +144,8 @@ public static class SaveServiceExtensions
                 [
                     new FilePickerFileType("Workspace Files")
                     {
-                        Patterns = ["*.pwaatws"]
+                        Patterns = ["*.pwaatws"],
+                        MimeTypes = ["application/octet-stream"]
                     }
                 ]
             });
@@ -100,13 +155,13 @@ public static class SaveServiceExtensions
                 return null;
             }
             var path = filePath[0].Path.LocalPath;
-            var workspaceData = await saveService.TryLoadWorkspaceDataAsync(path);
+            var workspaceData = await saveService.TryLoadWorkspaceDataAsync(path, expectedType);
             return workspaceData;
         }
         
         public async Task<T?> OpenWorkspaceAsync<T>() where T : class, IWorkspaceData
         {
-            var workspaceData = await saveService.OpenWorkspaceAsync();
+            var workspaceData = await saveService.OpenWorkspaceAsync(typeof(T));
             switch (workspaceData)
             {
                 case null:
@@ -114,9 +169,6 @@ public static class SaveServiceExtensions
                 case T typedWorkspaceData:
                     return typedWorkspaceData;
             }
-            await saveService.DialogService.ShowNotificationDialog("Error", 
-                "Loaded workspace data is of incorrect type.\n" +
-                $"Expected: {typeof(T).Name} Got: {workspaceData.GetType().Name}");
             Console.WriteLine("Loaded workspace data is of incorrect type.");
             return null;
         }
@@ -134,7 +186,8 @@ public static class SaveServiceExtensions
             var fullFileName = fileName + ".pwaatws";
             var filePickerFileType = new FilePickerFileType("Workspace Files")
             {
-                Patterns = ["*.pwaatws"]
+                Patterns = ["*.pwaatws"],
+                MimeTypes = ["application/octet-stream"]
             };
             var result = await saveService.DialogService.SaveFilePickerAsync(new FilePickerSaveOptions
             {

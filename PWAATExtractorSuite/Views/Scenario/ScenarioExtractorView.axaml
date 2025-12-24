@@ -1,0 +1,65 @@
+<rxui:ReactiveUserControl xmlns="https://github.com/avaloniaui"
+                          xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                          xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                          xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                          xmlns:sharedViews="clr-namespace:PWAATExtractorSuite.Views.Shared"
+                          xmlns:vm="clr-namespace:PWAATExtractorSuite.ViewModels"
+                          xmlns:m="clr-namespace:PWAATExtractorSuite.Models"
+                          xmlns:rxui="http://reactiveui.net"
+                          xmlns:scenario="clr-namespace:PWAATExtractorSuite.ViewModels.Scenario"
+                          xmlns:scenarioView="clr-namespace:PWAATExtractorSuite.Views.Scenario"
+                          mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+                          x:Class="PWAATExtractorSuite.Views.Scenario.ScenarioExtractorView"
+                          x:TypeArguments="scenario:ScenarioExtractorViewModel" 
+                          x:DataType="scenario:ScenarioExtractorViewModel">
+    <Design.DataContext>
+        <scenario:ScenarioExtractorViewModel />
+    </Design.DataContext>
+    <DockPanel>
+        <TextBlock 
+            DockPanel.Dock="Top"
+            HorizontalAlignment="Center"
+            Padding="5"
+            FontSize="20"
+            FontWeight="SemiBold"
+            Text="Scenario Workspace"/>
+        <TextBlock 
+            DockPanel.Dock="Bottom"
+            Padding="5"
+            Text="💡Hint: Hover your cursor over each topic to see tooltip description."/>
+        <StackPanel Orientation="Vertical">
+            <TabControl>
+                <TabControl.Styles>
+                    <Style Selector="TabItem">
+                        <Setter Property="FontSize" Value="15"/>
+                    </Style>
+                </TabControl.Styles>
+                <TabItem Header="Initialization">
+                    <StackPanel Orientation="Vertical" Spacing="10" Margin="10">
+                        <TextBlock
+                            Text="No workspace yet? Run wizard:"/>
+                        <Button
+                            Command="{Binding RunWizardCommand}">                    
+                            <TextBlock Text="Initialization Wizard"/>
+                        </Button>
+                        <TextBlock
+                            Text="Already have one? Open it:"/>
+                        <Button
+                            Command="{Binding OpenWorkspaceCommand}">                       
+                            <TextBlock Text="Open Scenario Workspace"/>
+                        </Button>
+                    </StackPanel>
+                </TabItem>
+                <TabItem Header="Workspace">
+                    <sharedViews:WorkspaceTabView DataContext="{Binding WorkspaceTab}"/>
+                </TabItem>
+                <TabItem Header="Speaker Definition">
+                    <scenarioView:ScenarioSpeakerDefinitionTab DataContext="{Binding SpeakerDefinitionTab}"/>
+                </TabItem>
+                <TabItem Header="Operation">
+                    <scenarioView:ScenarioOperationTab DataContext="{Binding OperationTab}"/>
+                </TabItem>
+            </TabControl>
+        </StackPanel>
+    </DockPanel>
+</rxui:ReactiveUserControl>

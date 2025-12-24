@@ -1,4 +1,6 @@
 using System;
+using ObservableCollections;
+using PWAATExtractorSuite.ViewModels.Shared;
 
 namespace PWAATExtractorSuite.Models;
 

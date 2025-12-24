@@ -1,0 +1,146 @@
+<rxui:ReactiveUserControl xmlns="https://github.com/avaloniaui"
+                          xmlns:rxui="http://reactiveui.net"
+                          xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                          xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                          xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                          xmlns:vm="clr-namespace:PWAATExtractorSuite.ViewModels.Scenario"
+                          mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+                          x:TypeArguments="vm:ScenarioSpeakerDefinitionTabViewModel"
+                          x:DataType="vm:ScenarioSpeakerDefinitionTabViewModel"
+                          x:Class="PWAATExtractorSuite.Views.Scenario.ScenarioSpeakerDefinitionTab">
+    <Design.DataContext>
+        <vm:ScenarioSpeakerDefinitionTabViewModel />
+    </Design.DataContext>
+
+    <StackPanel Orientation="Vertical" Spacing="10" Margin="10">
+        <StackPanel Orientation="Horizontal" Spacing="20">
+            <TextBlock
+                ToolTip.Tip="Select the speaker definition file to load speaker definitions from."
+                Text="{Binding SpeakerDefinition.Name.Value, StringFormat={}{0} File}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBox
+                    Text="{Binding SpeakerDefinition.Path.Value, Mode=TwoWay}"
+                    Width="200">
+                    <Interaction.Behaviors>
+                        <ExecuteCommandOnLostFocusBehavior Command="{Binding SpeakerDefinitionTextBoxLostFocusCommand}" />
+                    </Interaction.Behaviors>
+                </TextBox>
+                <Button
+                    Command="{Binding BrowseSpeakerDefinitionPathCommand}"
+                    ToolTip.Tip="Browse for Speaker Definition File">
+                    <TextBlock Text="Browse" />
+                </Button>
+                <Button
+                    Command="{Binding OpenSpeakerDefinitionPathCommand}"
+                    ToolTip.Tip="Open Speaker Definition File">
+                    <TextBlock Text="Open" />
+                </Button>
+                <Button
+                    Command="{Binding RefreshSpeakerDefinitionPathCommand}"
+                    ToolTip.Tip="Refresh Speaker Definition List">
+                    <TextBlock Text="Refresh" />
+                </Button>
+            </StackPanel>
+        </StackPanel>
+        <Expander
+            ToolTip.Tip="Lists all speaker definitions found in the selected speaker definition file."
+            Header="Speaker Definitions"
+            HorizontalAlignment="Stretch"
+            Height="400">
+            <ScrollViewer>
+                <StackPanel Orientation="Vertical" Spacing="10">
+                    <DataGrid ItemsSource="{Binding SpeakerDefinitionViews, Mode=TwoWay}"
+                              GridLinesVisibility="All"
+                              CanUserResizeColumns="True"
+                              CanUserSortColumns="True"
+                              IsReadOnly="False"
+                              HorizontalAlignment="Left"
+                              BorderThickness="1" BorderBrush="Gray"
+                              Height="275">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="Id" CanUserSort="True" SortMemberPath="Id.Value">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock
+                                            Margin="5"
+                                            Text="{Binding Id.Value}"
+                                            HorizontalAlignment="Stretch"
+                                            VerticalAlignment="Center"
+                                            TextAlignment="Center">
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate>
+                                        <TextBox Text="{Binding Id.Value, Mode=TwoWay}"
+                                                 HorizontalAlignment="Stretch">
+                                            <Interaction.Behaviors>
+                                                <ExecuteCommandOnLostFocusBehavior
+                                                    Command="{Binding
+                                            RelativeSource={RelativeSource FindAncestor, AncestorType=DataGrid},
+                                            Path=((vm:ScenarioSpeakerDefinitionTabViewModel)DataContext).SpeakerIdTextBoxLostFocusCommand}"
+                                                    CommandParameter="{Binding}" />
+                                            </Interaction.Behaviors>
+                                        </TextBox>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="Name" CanUserSort="True" SortMemberPath="Name.Value">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Margin="5"
+                                                   Text="{Binding Name.Value}"
+                                                   HorizontalAlignment="Stretch"
+                                                   VerticalAlignment="Center"
+                                                   TextAlignment="Center">
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate>
+                                        <TextBox
+                                            Text="{Binding Name.Value, Mode=TwoWay}"
+                                            HorizontalAlignment="Stretch">
+                                            <Interaction.Behaviors>
+                                                <ExecuteCommandOnLostFocusBehavior
+                                                    Command="{Binding
+                                                RelativeSource={RelativeSource FindAncestor, AncestorType=DataGrid},
+                                                Path=((vm:ScenarioSpeakerDefinitionTabViewModel)DataContext).SpeakerNameTextBoxLostFocusCommand}"
+                                                    CommandParameter="{Binding}" />
+                                            </Interaction.Behaviors>
+                                        </TextBox>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="Delete" CanUserSort="False" CanUserResize="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button 
+                                            ToolTip.Tip="Delete this speaker definition"
+                                            HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                                                Command="{Binding
+                                                RelativeSource={RelativeSource FindAncestor, AncestorType=DataGrid},
+                                                Path=((vm:ScenarioSpeakerDefinitionTabViewModel)DataContext).SpeakerDeleteCommand}"
+                                                CommandParameter="{Binding}">
+                                            <TextBlock
+                                                TextAlignment="Center"
+                                                Text="Delete" />
+                                        </Button>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <Button 
+                        ToolTip.Tip="Add a new speaker definition"
+                        Command="{Binding AddNewRowCommand}">
+                        <TextBlock Text="Add Row" />
+                    </Button>
+                </StackPanel>
+            </ScrollViewer>
+        </Expander>
+        <Panel />
+    </StackPanel>
+</rxui:ReactiveUserControl>

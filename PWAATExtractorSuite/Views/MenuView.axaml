@@ -22,8 +22,6 @@
                         </MenuItem.CommandParameter>
                     </MenuItem>
                     <MenuItem 
-                        ToolTip.Tip="Coming Soon."
-                        IsEnabled="False"
                         Header="_Scenario" 
                         Command="{Binding NewWorkspaceCommand}">
                         <MenuItem.CommandParameter>

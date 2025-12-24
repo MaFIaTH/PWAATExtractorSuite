@@ -30,13 +30,13 @@
                 </Style>
             </StackPanel.Styles>
             <Button
-                    Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=dha:DialogHost}, Path=CloseDialogCommand}">
-                <TextBlock Text="Cancel"/>
+                Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=dha:DialogHost}, Path=CloseDialogCommand}" 
+                CommandParameter="{Binding RootWorkspacePath.Value}">
+                <TextBlock Text="OK"/>
             </Button>
             <Button
-                    Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=dha:DialogHost}, Path=CloseDialogCommand}" 
-                    CommandParameter="{Binding RootWorkspacePath.Value}">
-                <TextBlock Text="OK"/>
+                    Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=dha:DialogHost}, Path=CloseDialogCommand}">
+                <TextBlock Text="Cancel"/>
             </Button>
         </StackPanel>
         <StackPanel Orientation="Vertical" Spacing="10" Margin="0,10,0,10">

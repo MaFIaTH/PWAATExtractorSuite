@@ -1,71 +1,74 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using ObservableCollections;
 using PWAATExtractorSuite.Models;
 using PWAATExtractorSuite.ViewModels.Dialogs;
 using PWAATExtractorSuite.ViewModels.Shared;
 using R3;
 using ReactiveUI;
-using CompositeDisposable = System.Reactive.Disposables.CompositeDisposable;
-using FileMode = PWAATExtractorSuite.Models.FileMode;
 using ReactiveCommand = R3.ReactiveCommand;
+using CompositeDisposable = System.Reactive.Disposables.CompositeDisposable;
 
-namespace PWAATExtractorSuite.ViewModels.Binary;
+namespace PWAATExtractorSuite.ViewModels.Scenario;
 
-public enum BinaryOperationMode
+public enum ScenarioOperationMode
 {
     Extract,
     Insert,
+    Simplify,
+    Desimplify
 }
 
-public class BinaryExtractorViewModel : ViewModelBase, IActivatableViewModel, IRoutableViewModel
+public class ScenarioExtractorViewModel : ViewModelBase, IActivatableViewModel, IRoutableViewModel
 {
-    public string? UrlPathSegment => "binary-extractor";
+    public string UrlPathSegment => "scenario-extractor";
     public IScreen HostScreen { get; }
     public ViewModelActivator Activator { get; } = new();
-    public WorkspaceTabViewModel WorkspaceTab { get; } = new BinaryWorkspaceTabViewModel();
-    public BinaryOperationTabViewModel OperationTab { get; } = new();
+
+    public WorkspaceTabViewModel WorkspaceTab { get; } = new ScenarioWorkspaceTabViewModel();
+    public ScenarioSpeakerDefinitionTabViewModel SpeakerDefinitionTab { get; } = new();
+    public ScenarioOperationTabViewModel OperationTab { get; } = new();
     
     #region Commands and Properties
     public ReactiveCommand RunWizardCommand { get; } = new();
     public ReactiveCommand OpenWorkspaceCommand { get; } = new();
     #endregion
     
-    private readonly BinaryExtractorModel _model;
+    private readonly ScenarioExtractorModel _model;
     private readonly IDialogService _dialogService;
     private readonly IWizardService _wizardService;
     private readonly ISaveService _saveService;
-    
-    public BinaryExtractorViewModel()
-    { 
+
+    public ScenarioExtractorViewModel()
+    {
         this.WhenActivated(Bind);
     }
-    
-    public BinaryExtractorViewModel(
-        BinaryExtractorModel model,
-        [FromKeyedServices(ExtractorType.Binary)] WorkspaceTabViewModel workspaceTab,
-        BinaryOperationTabViewModel operationTab,
-        [FromKeyedServices(ViewModelType.MainRouter)] IScreen screen,
+
+    public ScenarioExtractorViewModel(
+        ScenarioExtractorModel model,
+        [FromKeyedServices(ExtractorType.Scenario)] WorkspaceTabViewModel workspaceTab,
+        ScenarioSpeakerDefinitionTabViewModel speakerDefinitionTab,
+        ScenarioOperationTabViewModel operationTab,
+        [FromKeyedServices(ViewModelType.MainRouter)] IScreen hostScreen,
         IDialogService dialogService,
         IWizardService wizardService,
-        ISaveService saveService) 
+        ISaveService saveService)
         :this()
     {
-        _model = model;
         WorkspaceTab = workspaceTab;
+        SpeakerDefinitionTab = speakerDefinitionTab;
         OperationTab = operationTab;
-        HostScreen = screen;
+        HostScreen = hostScreen;
+        _model = model;
         _dialogService = dialogService;
         _wizardService = wizardService;
         _saveService = saveService;
     }
-
+    
     private void Bind(CompositeDisposable disposables)
     {
-        Console.WriteLine("BinaryExtractorViewModel activated");
+        Console.WriteLine("ScenarioExtractorViewModel activated");
         if (HostScreen is MainRouterViewModel mainRouter)
         {
             Observable.FromEvent<ViewModelBase>(
@@ -74,10 +77,10 @@ public class BinaryExtractorViewModel : ViewModelBase, IActivatableViewModel, IR
                 .Where(vm => vm == this)
                 .Subscribe(_ =>
                 {
-                    Console.WriteLine("BinaryExtractorViewModel reloaded");
-                    if (_saveService.CurrentWorkspaceData is BinaryWorkspaceData binaryWorkspaceData)
+                    Console.WriteLine("ScenarioExtractorViewModel reloaded");
+                    if (_saveService.CurrentWorkspaceData is ScenarioWorkspaceData scenarioWorkspaceData)
                     {
-                        SetUpWorkspace(binaryWorkspaceData);
+                        SetUpWorkspace(scenarioWorkspaceData);
                     }
                 })
                 .AddTo(disposables);
@@ -89,6 +92,7 @@ public class BinaryExtractorViewModel : ViewModelBase, IActivatableViewModel, IR
             .SubscribeAwait(onNextAsync: (_, _) => OnOpenWorkSpace(), AwaitOperation.Drop)
             .AddTo(disposables);
         WorkspaceTab.BindWhenParentActivate(disposables);
+        SpeakerDefinitionTab.BindWhenParentActivate(disposables);
         OperationTab.BindWhenParentActivate(disposables);
         _model.WorkspaceData
             .Skip(1)
@@ -100,11 +104,11 @@ public class BinaryExtractorViewModel : ViewModelBase, IActivatableViewModel, IR
             .AddTo(disposables);
         switch (_saveService.CurrentWorkspaceData)
         {
-            case BinaryWorkspaceData binaryWorkspaceData:
-                SetUpWorkspace(binaryWorkspaceData);
+            case ScenarioWorkspaceData scenarioWorkspaceData:
+                SetUpWorkspace(scenarioWorkspaceData);
                 break;
             default:
-                var newWorkspaceData = new BinaryWorkspaceData();
+                var newWorkspaceData = new ScenarioWorkspaceData();
                 SetUpWorkspace(newWorkspaceData);
                 break;
         }
@@ -112,7 +116,7 @@ public class BinaryExtractorViewModel : ViewModelBase, IActivatableViewModel, IR
 
     private async ValueTask OnRunWizard()
     { 
-        var result = await _dialogService.ShowWizardDialog(ExtractorType.Binary);
+        var result = await _dialogService.ShowWizardDialog(ExtractorType.Scenario);
         if (result == null)
         {
             Console.WriteLine("Wizard cancelled");
@@ -127,21 +131,21 @@ public class BinaryExtractorViewModel : ViewModelBase, IActivatableViewModel, IR
         IWorkspaceData workspaceData;
         try
         {
-            _wizardService.StartWizard(ExtractorType.Binary, result, out workspaceData);
+            _wizardService.StartWizard(ExtractorType.Scenario, result, out workspaceData);
         }
         catch (Exception ex)
         {
             await _dialogService.ShowNotificationDialog("Wizard Error", $"An error occurred while starting the wizard:\n{ex.Message}");
-            Console.WriteLine("Error starting wizard.");
+            Console.WriteLine($"Error starting wizard.");
             return;
         } 
-        SetUpWorkspace((workspaceData as BinaryWorkspaceData)!);
+        SetUpWorkspace((workspaceData as ScenarioWorkspaceData)!);
     }
     
     private async ValueTask OnOpenWorkSpace()
     { 
         Console.WriteLine("Opening workspace...");
-        var workspaceData = await _saveService.OpenWorkspaceAsync<BinaryWorkspaceData>();
+        var workspaceData = await _saveService.OpenWorkspaceAsync<ScenarioWorkspaceData>();
         if (workspaceData == null)
         {
             Console.WriteLine("No workspace data loaded.");
@@ -150,7 +154,7 @@ public class BinaryExtractorViewModel : ViewModelBase, IActivatableViewModel, IR
         SetUpWorkspace(workspaceData);
     }
 
-    private void SetUpWorkspace(BinaryWorkspaceData workspaceData)
+    private void SetUpWorkspace(ScenarioWorkspaceData workspaceData)
     {
         //_saveService.CurrentWorkspaceData = workspaceData;
         _model.WorkspaceData.Value = workspaceData;
@@ -160,9 +164,16 @@ public class BinaryExtractorViewModel : ViewModelBase, IActivatableViewModel, IR
         WorkspaceTab.Children.Add(new WorkspacePathHandler("Extraction Output", workspaceData.ExtractionOutputPath));
         WorkspaceTab.Children.Add(new WorkspacePathHandler("Insertion Input", workspaceData.InsertionInputPath));
         WorkspaceTab.Children.Add(new WorkspacePathHandler("Insertion Output", workspaceData.InsertionOutputPath));
+        WorkspaceTab.Children.Add(new WorkspacePathHandler("Simplification Input", workspaceData.SimplificationInputPath));
+        WorkspaceTab.Children.Add(new WorkspacePathHandler("Simplification Output", workspaceData.SimplificationOutputPath));
+        WorkspaceTab.Children.Add(new WorkspacePathHandler("Desimplification Original", workspaceData.DesimplificationOriginalPath));
+        WorkspaceTab.Children.Add(new WorkspacePathHandler("Desimplification Input", workspaceData.DesimplificationInputPath));
+        WorkspaceTab.Children.Add(new WorkspacePathHandler("Desimplification Output", workspaceData.DesimplificationOutputPath));
+        SpeakerDefinitionTab.SpeakerDefinition.Path.Value = workspaceData.SpeakerDefinitionPath;
+        _ = SpeakerDefinitionTab.LoadSpeakerDefinitions(workspaceData.SpeakerDefinitionPath);
     }
     
-    private void OnWorkspaceDataChanged(BinaryWorkspaceData data)
+    private void OnWorkspaceDataChanged(ScenarioWorkspaceData data)
     {
         _saveService.CurrentWorkspaceData = data;
     }

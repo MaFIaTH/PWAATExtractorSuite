@@ -66,13 +66,9 @@ public partial class MenuViewModel : ViewModelBase, IActivatableViewModel
         AboutCommand
             .SubscribeAwait((_, _) => OnAbout(), AwaitOperation.Drop)
             .AddTo(disposables);
-        Observable.EveryValueChanged(_saveService, service => service.CurrentWorkspaceData)
-            .Subscribe(_ =>
-            {
-                OnWorkspaceChanged();
-            })
-            .AddTo(disposables);
-        Observable.EveryValueChanged(_saveService, service => service.CurrentWorkspacePath)
+        Observable.FromEvent(
+                handler => _saveService.WorkspaceChanged += handler,
+                handler => _saveService.WorkspaceChanged -= handler)
             .Subscribe(_ =>
             {
                 OnWorkspaceChanged();
@@ -91,20 +87,24 @@ public partial class MenuViewModel : ViewModelBase, IActivatableViewModel
 
     private async ValueTask OnNewWorkSpace(ExtractorType extractorType)
     {
+        if (_router is not MainRouterViewModel mainRouter)
+        {
+            throw new InvalidOperationException("Router is not MainRouterViewModel");
+        }
         switch (extractorType)
         {
             case ExtractorType.Binary:
-                if (_router is not MainRouterViewModel mainRouter)
-                {
-                    throw new InvalidOperationException("Router is not MainRouterViewModel");
-                }
                 var binaryWorkspaceData = new BinaryWorkspaceData();
                 _saveService.CurrentWorkspaceData = binaryWorkspaceData;
                 _saveService.CurrentWorkspacePath = null;
                 mainRouter.NavigateTo(ViewModelType.BinaryExtractor);
                 break;
             case ExtractorType.Scenario:
-                throw new NotImplementedException();
+                var scenarioWorkspaceData = new ScenarioWorkspaceData();
+                _saveService.CurrentWorkspaceData = scenarioWorkspaceData;
+                _saveService.CurrentWorkspacePath = null;
+                mainRouter.NavigateTo(ViewModelType.ScenarioExtractor);
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(extractorType), extractorType, null);
         }
@@ -121,6 +121,9 @@ public partial class MenuViewModel : ViewModelBase, IActivatableViewModel
         {
             case BinaryWorkspaceData:
                 mainRouter.NavigateTo(ViewModelType.BinaryExtractor);
+                break;
+            case ScenarioWorkspaceData:
+                mainRouter.NavigateTo(ViewModelType.ScenarioExtractor);
                 break;
             default:
                 throw new NotSupportedException("Unsupported workspace data type");
@@ -141,7 +144,7 @@ public partial class MenuViewModel : ViewModelBase, IActivatableViewModel
     {
         if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)
         {
-            desktopLifetime.Shutdown();
+            desktopLifetime.MainWindow?.Close();
         }
     }
 

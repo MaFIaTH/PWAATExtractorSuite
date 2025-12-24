@@ -13,6 +13,7 @@
 
     <ItemGroup>
         <PackageReference Include="Avalonia" />
+        <PackageReference Include="Avalonia.Controls.DataGrid" />
         <PackageReference Include="Avalonia.Themes.Fluent"/>
         <PackageReference Include="Avalonia.Fonts.Inter"/>
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
@@ -44,10 +45,17 @@
       <Reference Include="PWAAT_bin_to_json">
         <HintPath>..\..\PWAAT_bin_to_json\PWAAT_bin_to_json\bin\Debug\net9.0\PWAAT_bin_to_json.dll</HintPath>
       </Reference>
+      <Reference Include="PWAAT_scenario_extractor">
+        <HintPath>..\..\PWAAT_scenario_extractor\PWAAT_scenario_extractor\bin\Release\net9.0\PWAAT_scenario_extractor.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
     <ItemGroup>
       <Compile Update="Views\Binary\BinaryExtractorView.axaml.cs">
+        <DependentUpon>ScenarioExtractorView.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </Compile>
+      <Compile Update="Views\Scenario\ScenarioExtractorView.axaml.cs">
         <DependentUpon>BinaryExtractorView.axaml</DependentUpon>
         <SubType>Code</SubType>
       </Compile>

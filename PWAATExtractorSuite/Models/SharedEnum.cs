@@ -9,5 +9,6 @@ public enum FileMode
 public enum ExtractorType
 {
     Binary,
-    Scenario
+    Scenario,
+    Cryptography
 }

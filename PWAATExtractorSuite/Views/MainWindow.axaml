@@ -18,6 +18,12 @@
         <Design.DataContext>
                 <vm:MainViewModel />
         </Design.DataContext>
+        <Interaction.Behaviors>
+                <EventTriggerBehavior EventName="Closing">
+                        <InvokeCommandAction Command="{Binding WindowClosingCommand}"
+                                             PassEventArgsToCommand="True"/>
+                </EventTriggerBehavior>
+        </Interaction.Behaviors>
         <dha:DialogHost IsMultipleDialogsEnabled="True">
                 <dha:DialogHost.DialogContent>
                         <!-- put your dialog content here-->

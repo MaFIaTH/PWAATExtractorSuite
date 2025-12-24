@@ -1,0 +1,348 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+using Avalonia.Platform.Storage;
+using PWAAT_scenario_extractor;
+using PWAAT_scenario_extractor.Simplifier;
+using PWAATExtractorSuite.Models;
+using PWAATExtractorSuite.ViewModels.Dialogs;
+using R3;
+using ReactiveUI;
+using FileMode = PWAATExtractorSuite.Models.FileMode;
+using ReactiveCommand = R3.ReactiveCommand;
+using CompositeDisposable = System.Reactive.Disposables.CompositeDisposable;
+
+namespace PWAATExtractorSuite.ViewModels.Scenario;
+
+public class ScenarioOperationTabViewModel : ViewModelBase, IActivatableViewModel
+{
+    public ViewModelActivator Activator { get; } = new();
+    public ReactiveCommand<FileMode> SetFileModeCommand { get; } = new();
+    public ReactiveCommand<ScenarioOperationMode> SetOperationModeCommand { get; } = new();
+    public ReactiveCommand StartOperationCommand { get; } = new();
+    public BindableReactiveProperty<bool> OpenOutputWhenDone { get; } = new(true);
+    public BindableReactiveProperty<string> FileModeDescription { get; } = new("Default Description");
+    public BindableReactiveProperty<string> OperationDescription { get; } = new("Default Description");
+    public BindableReactiveProperty<bool> WorkspaceDataValid { get; } = new(true);
+    
+    private readonly IDialogService _dialogService;
+    private readonly ILauncher _launcher;
+    private FileMode _currentFileMode = FileMode.Single;
+    private ScenarioOperationMode _currentOperationMode = ScenarioOperationMode.Extract;
+    
+    private readonly ScenarioExtractorModel _model;
+    
+    #region Descriptions
+    private readonly Dictionary<FileMode, string> _fileModeDescriptions = new()
+    {
+        { 
+            FileMode.Single, 
+            "Operate on one file at a time.\n" +
+            "Starting the operation will open a file picker corresponding to the selected operation mode." 
+        },
+        { 
+            FileMode.Batch,
+            "Operate on multiple files in a folder.\n" +
+            "Operating folder will be chosen automatically according to the selected operation mode." 
+        }
+    };
+    
+    private readonly Dictionary<ScenarioOperationMode, string> _operationModeDescriptions = new()
+    {
+        { 
+            ScenarioOperationMode.Extract, 
+            "Extract data from scenario files, then exporting it as a text format (.txt).\n" +
+            "Steps:\n" +
+            """1. Put the original .mdt file(s) inside the "{0}" folder.""" +
+            "\n" +
+            "2. Start the operation.\n" +
+            """3. See the output in "{1}" folder.""" 
+        },
+        { 
+            ScenarioOperationMode.Insert, 
+            "Insert data into scenario files, then exporting it as a scenario format (.mdt).\n" +
+            "Steps:\n" +
+            """1. Put the modified .txt file(s) inside the "{2}" folder.""" +
+            "\n" +
+            "2. Start the operation.\n" +
+            """3. See the output in "{3}" folder.""" 
+        },
+        { 
+            ScenarioOperationMode.Simplify, 
+            "Simplify the extracted scenario file, then exporting it as a simplified text file (.txt) and meta file (.meta).\n" +
+            "Steps:\n" +
+            """1. Put the extracted .txt file(s) inside the "{4}" folder.""" +
+            "\n" +
+            "2. (optional but recommended) Provide speaker definition in the Speaker Definition tab.\n" +
+            "3. Start the operation.\n" +
+            """4. See the output in "{5}" folder.""" 
+        },
+        { 
+            ScenarioOperationMode.Desimplify, 
+            "Desimplified the scenario file, then exporting it as an desimplified text file (.txt).\n" +
+            "Steps:\n" +
+            """1. Put the original .txt file(s) inside the "{6}" folder.""" +
+            "\n" +
+            """2. Put the simplified .txt and .meta file(s) inside the "{7}" folder.""" +
+            "\n" +
+            "3. Start the operation.\n" +
+            """4. See the output in "{8}" folder.""" 
+        }
+    };
+    #endregion
+    
+    public ScenarioOperationTabViewModel()
+    {
+        this.WhenActivated(BindWhenSelfActivate);
+    }
+
+    public ScenarioOperationTabViewModel(
+        ScenarioExtractorModel model,
+        IDialogService dialogService,
+        ILauncher launcher)
+        : this()
+    {
+        _model = model;
+        _dialogService = dialogService;
+        _launcher = launcher;
+    }
+    
+    public void BindWhenParentActivate(CompositeDisposable disposables)
+    {
+        _model.WorkspaceData
+            .Subscribe(OnWorkspaceDataChanged)
+            .AddTo(disposables);
+    }
+
+    private void BindWhenSelfActivate(CompositeDisposable disposables)
+    {
+        SetFileModeCommand
+            .Subscribe(OnFileModeChanged)
+            .AddTo(disposables);
+        SetOperationModeCommand
+            .Subscribe(OnOperationModeChanged)
+            .AddTo(disposables);
+        StartOperationCommand
+            .SubscribeAwait((_, _) => OnStartOperation(), AwaitOperation.Drop)
+            .AddTo(disposables);
+        OnWorkspaceDataChanged(_model.WorkspaceData.Value);
+        OnFileModeChanged(_currentFileMode);
+        OnOperationModeChanged(_currentOperationMode);
+    }
+    
+    private void OnFileModeChanged(FileMode mode)
+    {
+        _currentFileMode = mode;
+        FileModeDescription.Value = _fileModeDescriptions[mode];
+    }
+    
+    private void OnOperationModeChanged(ScenarioOperationMode mode)
+    {
+        _currentOperationMode = mode;
+        var description = _operationModeDescriptions[mode];
+        description = string.Format(
+            description,
+            _model.WorkspaceData.Value.ExtractionInputPath, //0
+            _model.WorkspaceData.Value.ExtractionOutputPath, //1
+            _model.WorkspaceData.Value.InsertionInputPath, //2
+            _model.WorkspaceData.Value.InsertionOutputPath, //3
+            _model.WorkspaceData.Value.SimplificationInputPath, //4
+            _model.WorkspaceData.Value.SimplificationOutputPath, //5
+            _model.WorkspaceData.Value.DesimplificationOriginalPath, //6
+            _model.WorkspaceData.Value.DesimplificationInputPath, //7
+            _model.WorkspaceData.Value.DesimplificationOutputPath); //8
+        OperationDescription.Value = description;
+    }
+    
+    private void OnWorkspaceDataChanged(ScenarioWorkspaceData workspaceData)
+    {
+        WorkspaceDataValid.Value = workspaceData.IsValid();
+    }
+    
+    private async ValueTask OnStartOperation()
+    {
+        Console.WriteLine($"Starting operation {_currentOperationMode} in {_currentFileMode} mode.");
+        try
+        {
+            switch (_currentOperationMode)
+            {
+                case ScenarioOperationMode.Extract:
+                    if (!await StartExtraction(_currentFileMode)) return;
+                    break;
+                case ScenarioOperationMode.Insert:
+                    if (!await StartInsertion(_currentFileMode)) return;
+                    break;
+                case ScenarioOperationMode.Simplify:
+                    if (!await StartSimplification(_currentFileMode)) return;
+                    break;
+                case ScenarioOperationMode.Desimplify:
+                    if (!await StartDesimplification(_currentFileMode)) return;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+        catch (Exception ex)
+        {
+            await _dialogService.ShowNotificationDialog("Operation Error", $"An error occurred during the operation:\n{ex.Message}");
+            Console.WriteLine($"Error during operation: {ex}");
+            return;
+        }
+        if (!OpenOutputWhenDone.Value)
+        {
+            await _dialogService.ShowNotificationDialog("Operation Completed", "The operation has completed successfully.");
+            return;
+        }
+        var path = _currentOperationMode switch
+        {
+            ScenarioOperationMode.Extract => _model.WorkspaceData.Value.ExtractionOutputPath,
+            ScenarioOperationMode.Insert => _model.WorkspaceData.Value.InsertionOutputPath,
+            ScenarioOperationMode.Simplify => _model.WorkspaceData.Value.SimplificationOutputPath,
+            ScenarioOperationMode.Desimplify => _model.WorkspaceData.Value.DesimplificationOutputPath,
+            _ => throw new ArgumentOutOfRangeException()
+        };
+        var success = await _launcher.LaunchDirectoryInfoAsync(new DirectoryInfo(path));
+        if (!success)
+        {
+            await _dialogService.ShowNotificationDialog("Error", $"Failed to open path: {path}");
+            Console.WriteLine($"Failed to open path: {path}");
+        }
+        await _dialogService.ShowNotificationDialog("Operation Completed", "The operation has completed successfully.");
+    }
+
+    private async Task<bool>  StartExtraction(FileMode fileMode)
+    {
+        switch (fileMode)
+        {
+            case FileMode.Single:
+                var singleExtractFile = await _dialogService.PickSingleFile([
+                    new FilePickerFileType("Scenario Files")
+                    {
+                        Patterns = ["*.mdt"],
+                        MimeTypes = ["application/octet-stream"]
+                    }
+                ], _model.WorkspaceData.Value.ExtractionInputPath);
+                if (singleExtractFile == null)
+                    return false;
+                var outputExtractTxtPath = Path.Combine(_model.WorkspaceData.Value.ExtractionOutputPath,
+                    Path.ChangeExtension(
+                        Path.GetFileName(singleExtractFile),
+                        ".txt"));
+                await Extractor.ExtractSingle(singleExtractFile, outputExtractTxtPath);
+                break;
+            case FileMode.Batch:
+                await Extractor.ExtractBatch(
+                    _model.WorkspaceData.Value.ExtractionInputPath,
+                    _model.WorkspaceData.Value.ExtractionOutputPath);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(fileMode), fileMode, null);
+        }
+        return true;
+    }
+    
+    private async Task<bool>  StartInsertion(FileMode fileMode)
+    {
+        switch (fileMode)
+        {
+            case FileMode.Single:
+                var singleInsertFile = await _dialogService.PickSingleFile([
+                    new FilePickerFileType("Text Files")
+                    {
+                        Patterns = ["*.txt"],
+                        MimeTypes = ["text/plain"]
+                    }
+                ], _model.WorkspaceData.Value.InsertionInputPath);
+                if (singleInsertFile == null)
+                    return false;
+                var outputMdtPath = Path.Combine(_model.WorkspaceData.Value.InsertionOutputPath,
+                    Path.ChangeExtension(
+                        Path.GetFileName(singleInsertFile),
+                        ".mdt"));
+                await Inserter.InsertSingle(singleInsertFile, outputMdtPath);
+                break;
+            case FileMode.Batch:
+                await Inserter.InsertBatch(
+                    _model.WorkspaceData.Value.InsertionInputPath,
+                    _model.WorkspaceData.Value.InsertionOutputPath);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(fileMode), fileMode, null);
+        }
+        return true;
+    }
+    
+    private async Task<bool>  StartSimplification(FileMode fileMode)
+    {
+        switch (fileMode)
+        {
+            case FileMode.Single:
+                var singleSimplifyFile = await _dialogService.PickSingleFile([
+                    new FilePickerFileType("Text Files")
+                    {
+                        Patterns = ["*.txt"],
+                        MimeTypes = ["text/plain"]
+                    }
+                ], _model.WorkspaceData.Value.SimplificationInputPath);
+                if (singleSimplifyFile == null)
+                    return false;
+                var outputSimplifyTxtPath = Path.Combine(_model.WorkspaceData.Value.SimplificationOutputPath,
+                    Path.ChangeExtension(
+                        Path.GetFileName(singleSimplifyFile),
+                        ".txt"));
+                await Simplifier.SimplifySingle(
+                    singleSimplifyFile, 
+                    outputSimplifyTxtPath, 
+                    speakerIdData: _model.WorkspaceData.Value.GetSpeakerIdData());
+                break;
+            case FileMode.Batch:
+                await Simplifier.SimplifyBatch(
+                    _model.WorkspaceData.Value.SimplificationInputPath,
+                    _model.WorkspaceData.Value.SimplificationOutputPath,
+                    speakerIdData: _model.WorkspaceData.Value.GetSpeakerIdData());
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(fileMode), fileMode, null);
+        }
+        return true;
+    }
+
+    private async Task<bool> StartDesimplification(FileMode fileMode)
+    {
+        switch (fileMode)
+        {
+            case FileMode.Single:
+                var singleDesimplifyFile = await _dialogService.PickSingleFile([
+                    new FilePickerFileType("Text Files")
+                    {
+                        Patterns = ["*.txt"],
+                        MimeTypes = ["text/plain"]
+                    }
+                ], _model.WorkspaceData.Value.DesimplificationInputPath);
+                if (singleDesimplifyFile == null)
+                    return false;
+                var originalFilePath = Path.Combine(
+                    _model.WorkspaceData.Value.DesimplificationOriginalPath,
+                    Path.GetFileName(singleDesimplifyFile));
+                var outputDesimplifyTxtPath = Path.Combine(_model.WorkspaceData.Value.DesimplificationOutputPath,
+                    Path.ChangeExtension(
+                        Path.GetFileName(singleDesimplifyFile),
+                        ".txt"));
+                await Desimplifier.DesimplifySingle(
+                    originalFilePath,
+                    singleDesimplifyFile, 
+                    outputDesimplifyTxtPath);
+                break;
+            case FileMode.Batch:
+                await Desimplifier.DesimplifyBatch(
+                    _model.WorkspaceData.Value.DesimplificationOriginalPath,
+                    _model.WorkspaceData.Value.DesimplificationInputPath,
+                    _model.WorkspaceData.Value.DesimplificationOutputPath);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(fileMode), fileMode, null);
+        }
+        return true;
+    }
+}

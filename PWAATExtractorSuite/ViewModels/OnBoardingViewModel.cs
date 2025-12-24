@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
+using PWAATExtractorSuite.Models;
 using R3;
 using ReactiveUI;
 using Splat;
@@ -13,7 +14,7 @@ public class OnBoardingViewModel : ViewModelBase, IActivatableViewModel, IRoutab
     public string? UrlPathSegment => "on-boarding";
     public IScreen HostScreen { get; }
     public ViewModelActivator Activator { get; }
-    public ReactiveCommand ToBinaryExtractorCommand { get; } = new();
+    public ReactiveCommand<ViewModelType> ToExtractorCommand { get; } = new();
 
     public OnBoardingViewModel()
     {
@@ -31,18 +32,18 @@ public class OnBoardingViewModel : ViewModelBase, IActivatableViewModel, IRoutab
     private void Bind(CompositeDisposable compositeDisposable)
     {
         Console.WriteLine("Bind OnBoardingViewModel");
-        ToBinaryExtractorCommand
-            .Subscribe(_ => NavigateToBinaryExtractor())
+        ToExtractorCommand
+            .Subscribe(NavigateToExtractor)
             .AddTo(compositeDisposable);
     }
     
-    private void NavigateToBinaryExtractor()
+    private void NavigateToExtractor(ViewModelType extractorType)
     {
         Console.WriteLine("Navigating to binary extractor");
         Console.WriteLine($"HostScreen is {HostScreen?.GetType().Name}");
         if (HostScreen is MainRouterViewModel router)
         {
-            router.NavigateTo(ViewModelType.BinaryExtractor);
+            router.NavigateTo(extractorType);
         }
     }
 

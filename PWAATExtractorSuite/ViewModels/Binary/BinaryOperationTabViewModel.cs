@@ -90,7 +90,7 @@ public class BinaryOperationTabViewModel : ViewModelBase, IActivatableViewModel
     
     public void BindWhenParentActivate(CompositeDisposable disposables)
     {
-        // No parent bindings needed for now.
+        
         _model.WorkspaceData
             .Subscribe(OnWorkspaceDataChanged)
             .AddTo(disposables);
@@ -132,6 +132,10 @@ public class BinaryOperationTabViewModel : ViewModelBase, IActivatableViewModel
         OperationDescription.Value = description;
     }
     
+    private void OnWorkspaceDataChanged(BinaryWorkspaceData workspaceData)
+    {
+        WorkspaceDataValid.Value = workspaceData.IsValid();
+    }
     
     private async ValueTask OnStartOperation()
     {
@@ -140,35 +144,11 @@ public class BinaryOperationTabViewModel : ViewModelBase, IActivatableViewModel
         {
             switch (_currentOperationMode)
             {
-                case BinaryOperationMode.Extract when _currentFileMode is FileMode.Single:
-                    var singleExtractFile = await PickSingleFile(["*.bin", "*.cho"], _model.WorkspaceData.Value.ExtractionInputPath);
-                    if (singleExtractFile == null)
-                        return;
-                    var outputJsonFilePath = Path.Combine(_model.WorkspaceData.Value.ExtractionOutputPath,
-                        Path.ChangeExtension(
-                            Path.GetFileName(singleExtractFile),
-                            ".json"));
-                    await Extractor.ExtractSingle(singleExtractFile, outputJsonFilePath);
+                case BinaryOperationMode.Extract:
+                    if (!await StartExtraction(_currentFileMode)) return;
                     break;
-                case BinaryOperationMode.Extract when _currentFileMode is FileMode.Batch:
-                    await Extractor.ExtractBatch(
-                        _model.WorkspaceData.Value.ExtractionInputPath,
-                        _model.WorkspaceData.Value.ExtractionOutputPath);
-                    break;
-                case BinaryOperationMode.Insert when _currentFileMode is FileMode.Single:
-                    var singleInsertFile = await PickSingleFile(["*.json"], _model.WorkspaceData.Value.InsertionInputPath);
-                    if (singleInsertFile == null)
-                        return;
-                    var outputBinFilePath = Path.Combine(_model.WorkspaceData.Value.InsertionOutputPath,
-                        Path.ChangeExtension(
-                            Path.GetFileName(singleInsertFile),
-                            ".bin"));
-                    await Inserter.InsertSingle(singleInsertFile, outputBinFilePath);
-                    break;
-                case BinaryOperationMode.Insert when _currentFileMode is FileMode.Batch:
-                    await Inserter.InsertBatch(
-                        _model.WorkspaceData.Value.InsertionInputPath,
-                        _model.WorkspaceData.Value.InsertionOutputPath);
+                case BinaryOperationMode.Insert:
+                    if (!await StartInsertion(_currentFileMode)) return;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -200,40 +180,67 @@ public class BinaryOperationTabViewModel : ViewModelBase, IActivatableViewModel
         await _dialogService.ShowNotificationDialog("Operation Completed", "The operation has completed successfully.");
     }
 
-    private async ValueTask<string?> PickSingleFile(List<string> extension, string? startingFolderPath = null)
+
+    private async Task<bool> StartExtraction(FileMode fileMode)
     {
-        var startFolder = await _dialogService.StorageProvider.TryGetFolderFromPathAsync(startingFolderPath ?? string.Empty);
-        var result = await _dialogService.OpenFilePickerAsync(new FilePickerOpenOptions()
+        switch (fileMode)
         {
-            Title = "Select a file",
-            AllowMultiple = false,
-            FileTypeFilter = new List<FilePickerFileType>
-            {
-                new("Files")
-                {
-                    Patterns = extension
-                }
-            },
-            SuggestedStartLocation = startFolder
-        });
-        if (result.Count == 0)
-        {
-            Console.WriteLine("File picker cancelled");
-            return null;
+            case FileMode.Single:
+                var singleExtractFile = await _dialogService.PickSingleFile([
+                    new FilePickerFileType("Binary Files")
+                    {
+                        Patterns = ["*.bin", "*.cho"],
+                        MimeTypes = ["application/octet-stream"]
+                    }
+                ], _model.WorkspaceData.Value.ExtractionInputPath);
+                if (singleExtractFile == null)
+                    return false;
+                var outputJsonFilePath = Path.Combine(_model.WorkspaceData.Value.ExtractionOutputPath,
+                    Path.ChangeExtension(
+                        Path.GetFileName(singleExtractFile),
+                        ".json"));
+                await Extractor.ExtractSingle(singleExtractFile, outputJsonFilePath);
+                break;
+            case FileMode.Batch:
+                await Extractor.ExtractBatch(
+                    _model.WorkspaceData.Value.ExtractionInputPath,
+                    _model.WorkspaceData.Value.ExtractionOutputPath);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(fileMode), fileMode, null);
         }
-        var path = result[0].Path.LocalPath;
-        if (!File.Exists(path))
-        {
-            await _dialogService.ShowNotificationDialog("File Not Found", $"""The selected file "{path}" does not exist.""");
-            Console.WriteLine($"File does not exist: {path}");
-            return null;
-        }
-        Console.WriteLine($"File selected: {path}");
-        return path;
+        return true;
     }
 
-    private void OnWorkspaceDataChanged(BinaryWorkspaceData workspaceData)
+    private async Task<bool> StartInsertion(FileMode fileMode)
     {
-        WorkspaceDataValid.Value = workspaceData.IsValid();
+        switch (fileMode)
+        {
+            case FileMode.Single:
+                var singleInsertFile = await _dialogService.PickSingleFile([
+                    new FilePickerFileType("JSON Files")
+                    {
+                        Patterns = ["*.json"],
+                        MimeTypes = ["application/json"]
+                    }
+                ], _model.WorkspaceData.Value.InsertionInputPath);
+                if (singleInsertFile == null)
+                    return false;
+                var outputBinFilePath = Path.Combine(_model.WorkspaceData.Value.InsertionOutputPath,
+                    Path.ChangeExtension(
+                        Path.GetFileName(singleInsertFile),
+                        ".bin"));
+                await Inserter.InsertSingle(singleInsertFile, outputBinFilePath);
+                break;
+            case FileMode.Batch:
+                await Inserter.InsertBatch(
+                    _model.WorkspaceData.Value.InsertionInputPath,
+                    _model.WorkspaceData.Value.InsertionOutputPath);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(fileMode), fileMode, null);
+        }
+        return true;
     }
+    
 }

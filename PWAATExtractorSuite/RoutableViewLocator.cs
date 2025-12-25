@@ -1,8 +1,10 @@
 using System;
 using PWAATExtractorSuite.ViewModels;
 using PWAATExtractorSuite.ViewModels.Binary;
+using PWAATExtractorSuite.ViewModels.Cryptography;
 using PWAATExtractorSuite.ViewModels.Scenario;
 using PWAATExtractorSuite.Views.Binary;
+using PWAATExtractorSuite.Views.Cryptography;
 using PWAATExtractorSuite.Views.Scenario;
 using ReactiveUI;
 using IViewLocator = ReactiveUI.IViewLocator;
@@ -36,6 +38,12 @@ public class RoutableViewLocator : IViewLocator
                 };
             case ScenarioExtractorViewModel context:
                 return new ScenarioExtractorView
+                {
+                    ViewModel = context,
+                    DataContext = context,
+                };
+            case CryptographyExtractorViewModel context:
+                return new CryptographyExtractorView
                 {
                     ViewModel = context,
                     DataContext = context,

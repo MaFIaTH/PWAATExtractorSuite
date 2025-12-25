@@ -24,6 +24,9 @@ public class WizardService : IWizardService
             case ExtractorType.Scenario:
                 RunScenarioWizard(rootPath, out workspaceData);
                 break;
+            case ExtractorType.Cryptography:
+                RunCryptographyWizard(rootPath, out workspaceData);
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(extractorType), extractorType, null);
         }
@@ -93,6 +96,25 @@ public class WizardService : IWizardService
         scenarioWorkspaceData.DesimplificationOriginalPath = desimplificationOriginalPath;
         scenarioWorkspaceData.DesimplificationInputPath = desimplificationInputPath;
         scenarioWorkspaceData.DesimplificationOutputPath = desimplificationOutputPath;
+    }
+
+    private void RunCryptographyWizard(string rootPath, out IWorkspaceData workspaceData)
+    {
+        workspaceData = new CryptographyWorkspaceData();
+        var decryptionInputPath = Path.Combine(rootPath, "decryption", "input");
+        var decryptionOutputPath = Path.Combine(rootPath, "decryption", "output");
+        var encryptionInputPath = Path.Combine(rootPath, "encryption", "input");
+        var encryptionOutputPath = Path.Combine(rootPath, "encryption", "output");
+        Directory.CreateDirectory(decryptionInputPath);
+        Directory.CreateDirectory(decryptionOutputPath);    
+        Directory.CreateDirectory(encryptionInputPath);
+        Directory.CreateDirectory(encryptionOutputPath);
+        var binaryWorkspaceData = (CryptographyWorkspaceData)workspaceData;
+        binaryWorkspaceData.RootWorkspacePath = rootPath;
+        binaryWorkspaceData.DecryptionInputPath = decryptionInputPath;
+        binaryWorkspaceData.DecryptionOutputPath = decryptionOutputPath;
+        binaryWorkspaceData.EncryptionInputPath = encryptionInputPath;
+        binaryWorkspaceData.EncryptionOutputPath = encryptionOutputPath;
     }
 }
 

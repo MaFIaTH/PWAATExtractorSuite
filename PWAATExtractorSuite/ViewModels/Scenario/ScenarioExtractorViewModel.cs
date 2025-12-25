@@ -156,7 +156,7 @@ public class ScenarioExtractorViewModel : ViewModelBase, IActivatableViewModel, 
 
     private void SetUpWorkspace(ScenarioWorkspaceData workspaceData)
     {
-        //_saveService.CurrentWorkspaceData = workspaceData;
+        _saveService.CurrentWorkspaceData = workspaceData;
         _model.WorkspaceData.Value = workspaceData;
         WorkspaceTab.Root.Path.Value = workspaceData.RootWorkspacePath;
         WorkspaceTab.Children.Clear();

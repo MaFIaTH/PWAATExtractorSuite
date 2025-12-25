@@ -70,7 +70,7 @@ public static class DialogExtensions
             var startFolder = await service.StorageProvider.TryGetFolderFromPathAsync(startingFolderPath ?? string.Empty);
             var filterType = filter ??
             [
-                new FilePickerFileType("All Files")
+                new FilePickerFileType("Any File")
                 {
                     Patterns = ["*"],
                     MimeTypes = ["*/*"]

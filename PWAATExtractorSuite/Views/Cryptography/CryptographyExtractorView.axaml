@@ -1,0 +1,61 @@
+<rxui:ReactiveUserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:rxui="http://reactiveui.net"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:PWAATExtractorSuite.ViewModels.Cryptography"
+             xmlns:cryptography="clr-namespace:PWAATExtractorSuite.Views.Cryptography"
+             xmlns:shared="clr-namespace:PWAATExtractorSuite.Views.Shared"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:TypeArguments="vm:CryptographyExtractorViewModel"
+             x:DataType="vm:CryptographyExtractorViewModel"
+             x:Class="PWAATExtractorSuite.Views.Cryptography.CryptographyExtractorView">
+    <Design.DataContext>
+        <vm:CryptographyExtractorViewModel />
+    </Design.DataContext>
+    
+    <DockPanel>
+        <TextBlock 
+            DockPanel.Dock="Top"
+            HorizontalAlignment="Center"
+            Padding="5"
+            FontSize="20"
+            FontWeight="SemiBold"
+            Text="Cryptography Workspace"/>
+        <TextBlock 
+            DockPanel.Dock="Bottom"
+            Padding="5"
+            Text="💡Hint: Hover your cursor over each topic to see tooltip description."/>
+        <StackPanel Orientation="Vertical">
+            <TabControl>
+                <TabControl.Styles>
+                    <Style Selector="TabItem">
+                        <Setter Property="FontSize" Value="15"/>
+                    </Style>
+                </TabControl.Styles>
+                <TabItem Header="Initialization">
+                    <StackPanel Orientation="Vertical" Spacing="10" Margin="10">
+                        <TextBlock
+                            Text="No workspace yet? Run wizard:"/>
+                        <Button
+                            Command="{Binding RunWizardCommand}">                    
+                            <TextBlock Text="Initialization Wizard"/>
+                        </Button>
+                        <TextBlock
+                            Text="Already have one? Open it:"/>
+                        <Button
+                            Command="{Binding OpenWorkspaceCommand}">                       
+                            <TextBlock Text="Open Cryptography Workspace"/>
+                        </Button>
+                    </StackPanel>
+                </TabItem>
+                <TabItem Header="Workspace">
+                    <shared:WorkspaceTabView DataContext="{Binding WorkspaceTab}"/>
+                </TabItem>
+                <TabItem Header="Operation">
+                    <cryptography:CryptographyOperationTab DataContext="{Binding OperationTab}"/>
+                </TabItem>
+            </TabControl>
+        </StackPanel>
+    </DockPanel>
+</rxui:ReactiveUserControl>

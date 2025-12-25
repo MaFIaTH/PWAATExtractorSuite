@@ -21,6 +21,7 @@ public enum ViewModelType
     OnBoarding,
     BinaryExtractor,
     ScenarioExtractor,
+    CryptographyExtractor,
 }
 
 public partial class MainViewModel : ViewModelBase, IActivatableViewModel, IDisposable
@@ -131,6 +132,9 @@ public partial class MainViewModel : ViewModelBase, IActivatableViewModel, IDisp
                 case ScenarioWorkspaceData:
                     MainRouterViewModel.NavigateTo(ViewModelType.ScenarioExtractor);
                     break;
+                case CryptographyWorkspaceData:
+                    MainRouterViewModel.NavigateTo(ViewModelType.CryptographyExtractor);
+                    break;
                 default:
                     MainRouterViewModel.NavigateTo(ViewModelType.OnBoarding);
                     break;
@@ -170,7 +174,14 @@ public partial class MainViewModel : ViewModelBase, IActivatableViewModel, IDisp
                 case ConfirmationDialogResult.No:
                     break;
                 case ConfirmationDialogResult.Yes:
-                    await _saveService.SaveCurrentWorkspaceAsync();
+                    var hasWorkspace = _saveService.CurrentWorkspaceData != null;
+                    var hasPath = !string.IsNullOrEmpty(_saveService.CurrentWorkspacePath) && File.Exists(_saveService.CurrentWorkspacePath);
+                    if (hasPath && hasWorkspace)
+                    {
+                        await _saveService.SaveCurrentWorkspaceAsync();
+                        break;
+                    }
+                    await _saveService.SaveNewWorkspaceAsync();
                     break;
             }
         }

@@ -28,6 +28,13 @@
                             <m:ExtractorType>Scenario</m:ExtractorType>
                         </MenuItem.CommandParameter>
                     </MenuItem>
+                    <MenuItem 
+                        Header="_Cryptography" 
+                        Command="{Binding NewWorkspaceCommand}">
+                        <MenuItem.CommandParameter>
+                            <m:ExtractorType>Cryptography</m:ExtractorType>
+                        </MenuItem.CommandParameter>
+                    </MenuItem>
                 </MenuItem>
                 <MenuItem Header="_Open" Command="{Binding OpenWorkspaceCommand}"/>
                 <MenuItem Header="_Save" Command="{Binding SaveCurrentWorkspaceCommand}"/>

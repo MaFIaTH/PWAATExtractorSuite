@@ -1,16 +1,15 @@
 using System;
-using System.IO;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using System.Linq;
-using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using PWAATExtractorSuite.Models;
 using PWAATExtractorSuite.ViewModels;
 using PWAATExtractorSuite.ViewModels.Binary;
+using PWAATExtractorSuite.ViewModels.Cryptography;
 using PWAATExtractorSuite.ViewModels.Dialogs;
 using PWAATExtractorSuite.ViewModels.Scenario;
 using PWAATExtractorSuite.ViewModels.Shared;
@@ -103,9 +102,15 @@ public partial class App : Application
         services.AddTransient<ScenarioSpeakerDefinitionTabViewModel>();
         services.AddTransient<ScenarioOperationTabViewModel>();
         
+        //Cryptography Extractor
+        services.AddSingleton<CryptographyExtractorModel>();
+        services.AddTransient<CryptographyExtractorViewModel>();
+        services.AddTransient<CryptographyOperationTabViewModel>();
+        
         //Shared ViewModels
         services.AddKeyedTransient<WorkspaceTabViewModel, BinaryWorkspaceTabViewModel>(ExtractorType.Binary);
         services.AddKeyedTransient<WorkspaceTabViewModel, ScenarioWorkspaceTabViewModel>(ExtractorType.Scenario);
+        services.AddKeyedTransient<WorkspaceTabViewModel, CryptographyWorkspaceTabViewModel>(ExtractorType.Cryptography);
         
         //Dialog ViewModels
         services.AddTransient<NotificationDialogViewModel>();
@@ -134,12 +139,14 @@ public partial class App : Application
         var onBoardingViewModel = provider.GetRequiredService<OnBoardingViewModel>();
         var binaryExtractorViewModel = provider.GetRequiredService<BinaryExtractorViewModel>();
         var scenarioExtractorViewModel = provider.GetRequiredService<ScenarioExtractorViewModel>();
+        var cryptographyExtractorViewModel = provider.GetRequiredService<CryptographyExtractorViewModel>();
         mainViewModel.AddViewModel(ViewModelType.Menu, menuViewModel);
         mainViewModel.AddViewModel(ViewModelType.MainRouter, routerViewModel!);
         mainViewModel.AddViewModel(ViewModelType.Settings, settingsViewModel);
         mainViewModel.AddViewModel(ViewModelType.OnBoarding, onBoardingViewModel);
         mainViewModel.AddViewModel(ViewModelType.BinaryExtractor, binaryExtractorViewModel);
         mainViewModel.AddViewModel(ViewModelType.ScenarioExtractor, scenarioExtractorViewModel);
+        mainViewModel.AddViewModel(ViewModelType.CryptographyExtractor, cryptographyExtractorViewModel);
     }
     
     protected virtual void This_ShutdownRequested(object? sender, ShutdownRequestedEventArgs e)

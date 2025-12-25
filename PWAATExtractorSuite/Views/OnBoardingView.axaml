@@ -55,6 +55,21 @@
                     HorizontalAlignment="Center" 
                     VerticalAlignment="Center"/>
             </Button>
+            <Button 
+                Command="{Binding ToExtractorCommand}"
+                Width="150" 
+                Height="60" 
+                HorizontalAlignment="Center">
+                <Button.CommandParameter>
+                    <vm:ViewModelType>CryptographyExtractor</vm:ViewModelType>
+                </Button.CommandParameter>
+                <TextBlock
+                    Text="Decrypt/Encrypt (Any File)" 
+                    TextWrapping="Wrap"
+                    TextAlignment="Center"
+                    HorizontalAlignment="Center" 
+                    VerticalAlignment="Center"/>
+            </Button>
         </StackPanel>
         <TextBlock Text="Already have a workspace? You can open it from the File menu."
                    FontSize="12" 

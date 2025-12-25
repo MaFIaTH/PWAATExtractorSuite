@@ -173,7 +173,7 @@ public static class SaveServiceExtensions
             return null;
         }
 
-        public async Task<bool> SaveWorkspaceAsync()
+        public async Task<bool> SaveNewWorkspaceAsync()
         {
             if (saveService.CurrentWorkspaceData == null)
             {

@@ -1,53 +1,50 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using ObservableCollections;
 using PWAATExtractorSuite.Models;
 using PWAATExtractorSuite.ViewModels.Dialogs;
 using PWAATExtractorSuite.ViewModels.Shared;
 using R3;
 using ReactiveUI;
-using CompositeDisposable = System.Reactive.Disposables.CompositeDisposable;
-using FileMode = PWAATExtractorSuite.Models.FileMode;
 using ReactiveCommand = R3.ReactiveCommand;
+using CompositeDisposable = System.Reactive.Disposables.CompositeDisposable;
 
-namespace PWAATExtractorSuite.ViewModels.Binary;
+namespace PWAATExtractorSuite.ViewModels.Cryptography;
 
-public enum BinaryOperationMode
+public enum CryptographyOperationMode
 {
-    Extract,
-    Insert,
+    Decrypt,
+    Encrypt,
 }
 
-public class BinaryExtractorViewModel : ViewModelBase, IActivatableViewModel, IRoutableViewModel
+public class CryptographyExtractorViewModel : ViewModelBase, IActivatableViewModel, IRoutableViewModel
 {
-    public string? UrlPathSegment => "binary-extractor";
+    public string UrlPathSegment => "cryptography-extractor";
     public IScreen HostScreen { get; }
     public ViewModelActivator Activator { get; } = new();
-    public WorkspaceTabViewModel WorkspaceTab { get; } = new BinaryWorkspaceTabViewModel();
-    public BinaryOperationTabViewModel OperationTab { get; } = new();
+    public WorkspaceTabViewModel WorkspaceTab { get; } = new CryptographyWorkspaceTabViewModel();
+    public CryptographyOperationTabViewModel OperationTab { get; } = new();
     
     #region Commands and Properties
     public ReactiveCommand RunWizardCommand { get; } = new();
     public ReactiveCommand OpenWorkspaceCommand { get; } = new();
     #endregion
     
-    private readonly BinaryExtractorModel _model;
+    private readonly CryptographyExtractorModel _model;
     private readonly IDialogService _dialogService;
     private readonly IWizardService _wizardService;
     private readonly ISaveService _saveService;
     
-    public BinaryExtractorViewModel()
+    public CryptographyExtractorViewModel()
     { 
         this.WhenActivated(Bind);
     }
     
-    public BinaryExtractorViewModel(
-        BinaryExtractorModel model,
-        [FromKeyedServices(ExtractorType.Binary)] WorkspaceTabViewModel workspaceTab,
-        BinaryOperationTabViewModel operationTab,
+    public CryptographyExtractorViewModel(
+        CryptographyExtractorModel model,
+        [FromKeyedServices(ExtractorType.Cryptography)] WorkspaceTabViewModel workspaceTab,
+        CryptographyOperationTabViewModel operationTab,
         [FromKeyedServices(ViewModelType.MainRouter)] IScreen screen,
         IDialogService dialogService,
         IWizardService wizardService,
@@ -65,7 +62,7 @@ public class BinaryExtractorViewModel : ViewModelBase, IActivatableViewModel, IR
 
     private void Bind(CompositeDisposable disposables)
     {
-        Console.WriteLine("BinaryExtractorViewModel activated");
+        Console.WriteLine("CryptographyExtractorViewModel activated");
         if (HostScreen is MainRouterViewModel mainRouter)
         {
             Observable.FromEvent<ViewModelBase>(
@@ -74,10 +71,10 @@ public class BinaryExtractorViewModel : ViewModelBase, IActivatableViewModel, IR
                 .Where(vm => vm == this)
                 .Subscribe(_ =>
                 {
-                    Console.WriteLine("BinaryExtractorViewModel reloaded");
-                    if (_saveService.CurrentWorkspaceData is BinaryWorkspaceData binaryWorkspaceData)
+                    Console.WriteLine("CryptographyExtractorViewModel reloaded");
+                    if (_saveService.CurrentWorkspaceData is CryptographyWorkspaceData cryptographyWorkspaceData)
                     {
-                        SetUpWorkspace(binaryWorkspaceData);
+                        SetUpWorkspace(cryptographyWorkspaceData);
                     }
                 })
                 .AddTo(disposables);
@@ -95,16 +92,16 @@ public class BinaryExtractorViewModel : ViewModelBase, IActivatableViewModel, IR
             .Subscribe(data =>
             {
                 OnWorkspaceDataChanged(data);
-                Console.WriteLine("Workspace data updated in BinaryExtractorViewModel");
+                Console.WriteLine("Workspace data updated in CryptographyExtractorViewModel");
             })
             .AddTo(disposables);
         switch (_saveService.CurrentWorkspaceData)
         {
-            case BinaryWorkspaceData binaryWorkspaceData:
-                SetUpWorkspace(binaryWorkspaceData);
+            case CryptographyWorkspaceData cryptographyWorkspaceData:
+                SetUpWorkspace(cryptographyWorkspaceData);
                 break;
             default:
-                var newWorkspaceData = new BinaryWorkspaceData();
+                var newWorkspaceData = new CryptographyWorkspaceData();
                 SetUpWorkspace(newWorkspaceData);
                 break;
         }
@@ -112,7 +109,7 @@ public class BinaryExtractorViewModel : ViewModelBase, IActivatableViewModel, IR
 
     private async ValueTask OnRunWizard()
     { 
-        var result = await _dialogService.ShowWizardDialog(ExtractorType.Binary);
+        var result = await _dialogService.ShowWizardDialog(ExtractorType.Cryptography);
         if (result == null)
         {
             Console.WriteLine("Wizard cancelled");
@@ -127,7 +124,7 @@ public class BinaryExtractorViewModel : ViewModelBase, IActivatableViewModel, IR
         IWorkspaceData workspaceData;
         try
         {
-            _wizardService.StartWizard(ExtractorType.Binary, result, out workspaceData);
+            _wizardService.StartWizard(ExtractorType.Cryptography, result, out workspaceData);
         }
         catch (Exception ex)
         {
@@ -135,13 +132,13 @@ public class BinaryExtractorViewModel : ViewModelBase, IActivatableViewModel, IR
             Console.WriteLine("Error starting wizard.");
             return;
         } 
-        SetUpWorkspace((workspaceData as BinaryWorkspaceData)!);
+        SetUpWorkspace((workspaceData as CryptographyWorkspaceData)!);
     }
     
     private async ValueTask OnOpenWorkSpace()
     { 
         Console.WriteLine("Opening workspace...");
-        var workspaceData = await _saveService.OpenWorkspaceAsync<BinaryWorkspaceData>();
+        var workspaceData = await _saveService.OpenWorkspaceAsync<CryptographyWorkspaceData>();
         if (workspaceData == null)
         {
             Console.WriteLine("No workspace data loaded.");
@@ -150,19 +147,19 @@ public class BinaryExtractorViewModel : ViewModelBase, IActivatableViewModel, IR
         SetUpWorkspace(workspaceData);
     }
 
-    private void SetUpWorkspace(BinaryWorkspaceData workspaceData)
+    private void SetUpWorkspace(CryptographyWorkspaceData workspaceData)
     {
         _saveService.CurrentWorkspaceData = workspaceData;
         _model.WorkspaceData.Value = workspaceData;
         WorkspaceTab.Root.Path.Value = workspaceData.RootWorkspacePath;
         WorkspaceTab.Children.Clear();
-        WorkspaceTab.Children.Add(new WorkspacePathHandler("Extraction Input", workspaceData.ExtractionInputPath));
-        WorkspaceTab.Children.Add(new WorkspacePathHandler("Extraction Output", workspaceData.ExtractionOutputPath));
-        WorkspaceTab.Children.Add(new WorkspacePathHandler("Insertion Input", workspaceData.InsertionInputPath));
-        WorkspaceTab.Children.Add(new WorkspacePathHandler("Insertion Output", workspaceData.InsertionOutputPath));
+        WorkspaceTab.Children.Add(new WorkspacePathHandler("Decryption Input", workspaceData.DecryptionInputPath));
+        WorkspaceTab.Children.Add(new WorkspacePathHandler("Decryption Output", workspaceData.DecryptionOutputPath));
+        WorkspaceTab.Children.Add(new WorkspacePathHandler("Encryption Input", workspaceData.EncryptionInputPath));
+        WorkspaceTab.Children.Add(new WorkspacePathHandler("Encryption Output", workspaceData.EncryptionOutputPath));
     }
     
-    private void OnWorkspaceDataChanged(BinaryWorkspaceData data)
+    private void OnWorkspaceDataChanged(CryptographyWorkspaceData data)
     {
         _saveService.CurrentWorkspaceData = data;
     }

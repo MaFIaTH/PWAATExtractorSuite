@@ -12,6 +12,7 @@ namespace PWAATExtractorSuite.Models;
 
 [Union(0, typeof(BinaryWorkspaceData))]
 [Union(1, typeof(ScenarioWorkspaceData))]
+[Union(2, typeof(CryptographyWorkspaceData))]
 public interface IWorkspaceData
 {
     ExtractorType Type { get; }
@@ -186,6 +187,45 @@ public record ScenarioWorkspaceData : IWorkspaceData
             SpeakerDefinitions.Add(handler);
         }
     }
+}
+
+[MessagePackObject(keyAsPropertyName: true)]
+public record CryptographyWorkspaceData : IWorkspaceData
+{
+    public ExtractorType Type => ExtractorType.Cryptography;
+    public string RootWorkspacePath { get; set; }
+    public string DecryptionInputPath { get; set; }
+    public string DecryptionOutputPath { get; set; }
+    public string EncryptionInputPath { get; set; }
+    public string EncryptionOutputPath { get; set; }
+    
+    public bool IsValid()
+    {
+        return Directory.Exists(RootWorkspacePath) &&
+               Directory.Exists(DecryptionInputPath) &&
+               Directory.Exists(DecryptionOutputPath) &&
+               Directory.Exists(EncryptionInputPath) &&
+               Directory.Exists(EncryptionOutputPath);
+    }
+    
+    public IWorkspaceData Copy()
+    {
+        return this with { };
+    }
+
+    public bool CompareMemberwise(IWorkspaceData? other)
+    {
+        if (other is not CryptographyWorkspaceData otherCrypto) return false;
+        return Type.Equals(other.Type) &&
+               WorkspaceDataUtils.IsPathEqual(RootWorkspacePath, otherCrypto.RootWorkspacePath) &&
+               WorkspaceDataUtils.IsPathEqual(DecryptionInputPath, otherCrypto.DecryptionInputPath) &&
+               WorkspaceDataUtils.IsPathEqual(DecryptionOutputPath, otherCrypto.DecryptionOutputPath) &&
+               WorkspaceDataUtils.IsPathEqual(EncryptionInputPath, otherCrypto.EncryptionInputPath) &&
+               WorkspaceDataUtils.IsPathEqual(EncryptionOutputPath, otherCrypto.EncryptionOutputPath);
+    }
+    
+    public Task Save() => Task.CompletedTask;
+    public Task Load() => Task.CompletedTask;
 }
 
 public static class WorkspaceDataUtils

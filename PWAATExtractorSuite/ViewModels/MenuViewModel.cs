@@ -105,6 +105,12 @@ public partial class MenuViewModel : ViewModelBase, IActivatableViewModel
                 _saveService.CurrentWorkspacePath = null;
                 mainRouter.NavigateTo(ViewModelType.ScenarioExtractor);
                 break;
+            case ExtractorType.Cryptography:
+                var cryptographyWorkspaceData = new CryptographyWorkspaceData();
+                _saveService.CurrentWorkspaceData = cryptographyWorkspaceData;
+                _saveService.CurrentWorkspacePath = null;
+                mainRouter.NavigateTo(ViewModelType.CryptographyExtractor);
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(extractorType), extractorType, null);
         }
@@ -125,6 +131,9 @@ public partial class MenuViewModel : ViewModelBase, IActivatableViewModel
             case ScenarioWorkspaceData:
                 mainRouter.NavigateTo(ViewModelType.ScenarioExtractor);
                 break;
+            case CryptographyWorkspaceData:
+                mainRouter.NavigateTo(ViewModelType.CryptographyExtractor);
+                break;
             default:
                 throw new NotSupportedException("Unsupported workspace data type");
         }
@@ -137,7 +146,7 @@ public partial class MenuViewModel : ViewModelBase, IActivatableViewModel
     
     private async ValueTask OnSaveNewWorkspace()
     {
-        await _saveService.SaveWorkspaceAsync();
+        await _saveService.SaveNewWorkspaceAsync();
     }
     
     private async ValueTask OnExitApplication()

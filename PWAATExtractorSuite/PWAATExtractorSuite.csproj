@@ -43,10 +43,10 @@
 
     <ItemGroup>
       <Reference Include="PWAAT_bin_to_json">
-        <HintPath>..\..\PWAAT_bin_to_json\PWAAT_bin_to_json\bin\Debug\net9.0\PWAAT_bin_to_json.dll</HintPath>
+        <HintPath>..\reference\PWAAT_bin_to_json.dll</HintPath>
       </Reference>
       <Reference Include="PWAAT_scenario_extractor">
-        <HintPath>..\..\PWAAT_scenario_extractor\PWAAT_scenario_extractor\bin\Release\net9.0\PWAAT_scenario_extractor.dll</HintPath>
+        <HintPath>..\reference\PWAAT_scenario_extractor.dll</HintPath>
       </Reference>
     </ItemGroup>
 

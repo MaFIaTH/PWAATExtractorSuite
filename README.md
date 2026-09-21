@@ -73,6 +73,7 @@ SetTextColor(0);
 ReadKey();
 ```
 The Simplifier can simplify the text, including only the commands necessary for translation:
+#### Disclaimer: Simplified text does not support adding/removing commands! The amount of lines in the simplified scenario is crucial for the desimplifying process. If you want to add/remove command, please do it before simplification or after desimplification.
 ```
 [Phoenix Wright]
 [SetTextColor(Blue);]
